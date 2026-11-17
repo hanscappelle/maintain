@@ -2,6 +2,10 @@
 
 Een lokale Node.js-app om voertuigen en hun onderhoudshistoriek bij te houden. Voeg motorfietsen, auto's of ander rollend materiaal toe en registreer per onderhoudsbeurt de datum, kilometerstand, werkzaamheden, notities en optionele kosten. Per voertuig zie je de historiek en een grafiek van de kilometerstand doorheen de tijd. Registraties en voertuigen kunnen worden aangepast of verwijderd.
 
+## Online versie
+
+De gepubliceerde website is beschikbaar op [betyre.alwaysdata.net/maintain](https://betyre.alwaysdata.net/maintain/).
+
 ## Installatie
 
 Vereist: Node.js 20 of nieuwer.
