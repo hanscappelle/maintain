@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f7f4">
+  <title>Garageboek — Onderhoud in één overzicht</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="validation.js" defer></script>
+  <script src="storage.js" defer></script>
+  <script src="insights.js" defer></script>
+  <script src="download.js" defer></script>
+  <script src="links.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <a class="brand" href="./" aria-label="Garageboek startpagina"><span class="brand-icon">G<span>.</span></span><span>garageboek<small>JE DIGITALE GARAGE</small></span></a>
+        <button type="button" class="sidebar-toggle" id="sidebar-toggle" aria-controls="sidebar-heading archive-heading sidebar-bottom" aria-expanded="true" aria-label="Zijmenu inklappen" title="Zijmenu inklappen"><span aria-hidden="true">☰</span></button>
+      </div>
+      <div id="sidebar-content" class="sidebar-content">
+        <button type="button" class="vehicle-link overview-link" id="show-overview" aria-label="Algemeen dashboard" title="Algemeen dashboard"><span class="vehicle-link-icon" aria-hidden="true">▦</span><span class="vehicle-details"><strong>Dashboard</strong><small>Actieve voertuigen</small></span></button>
+        <div class="sidebar-heading" id="sidebar-heading"><span>MIJN VOERTUIGEN</span><button class="icon-button" id="add-vehicle-side" aria-label="Voertuig toevoegen">+</button></div>
+        <nav id="vehicle-list" aria-label="Voertuigen"></nav>
+        <div class="sidebar-heading" id="archive-heading"><span>ARCHIEF</span></div>
+        <nav id="archive-list" aria-label="Gearchiveerde voertuigen"></nav>
+        <div class="sidebar-bottom" id="sidebar-bottom"><span class="sidebar-bottom-icon">✳</span><div><strong>Alles op één plek.</strong><p>Goed onderhoud begint met een goed overzicht.</p></div></div>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar"><div><span class="eyebrow">JOUW GARAGE</span><h1>Onderhoudsoverzicht</h1><p>Alles wat je voertuig heeft meegemaakt, op één plek.</p></div><button class="button button-outline" id="add-vehicle">＋ <span>Voertuig toevoegen</span></button></header>
+      <section class="data-bar data-warning" aria-label="Belangrijke waarschuwing over je gegevens">
+        <div class="data-warning-copy"><strong><span aria-hidden="true">⚠</span> Let op: je gegevens worden alleen in deze browser bewaard.</strong><p>Ze worden niet online opgeslagen of automatisch geback-upt. Wis je browsergegevens of gebruik je een ander apparaat? Dan raak je ze kwijt. Download regelmatig een back-up.</p></div>
+        <div class="data-actions"><button class="button button-outline button-small" id="import-data">JSON uploaden</button><button class="button button-primary button-small" id="export-data">JSON downloaden</button><input id="import-file" type="file" accept=".json,application/json" hidden></div>
+      </section>
+      <div id="notice" class="notice" role="alert" hidden></div>
+      <section id="overview" hidden aria-labelledby="overview-title">
+        <div class="overview-heading"><span class="eyebrow">JOUW GARAGE</span><h2 id="overview-title">Algemeen dashboard</h2><p>Inzicht in je voertuigen en geplande werkzaamheden.</p></div>
+        <div class="stats">
+          <div class="stat"><span>VOERTUIGEN</span><strong id="overview-vehicles">0</strong><small>actief in je garage</small></div>
+          <div class="stat"><span>REGISTRATIES</span><strong id="overview-entries">0</strong><small>onderhoud en waarnemingen</small></div>
+          <div class="stat"><span>AANDACHT NODIG</span><strong id="overview-due">0</strong><small>naderend of bereikt</small></div>
+        </div>
+        <section class="panel"><div class="panel-heading"><div><span class="eyebrow">KILOMETERS</span><h3>Verloop per voertuig</h3><p>Op basis van registraties tot en met vandaag.</p></div></div><div id="overview-vehicles-list" class="overview-mileage-grid"></div></section>
+        <section class="panel" aria-labelledby="overview-notes-title"><div class="panel-heading"><div><span class="eyebrow">AANDACHTSPUNTEN</span><h3 id="overview-notes-title">Belangrijke notities</h3><p>Gemarkeerde notities van actieve voertuigen.</p></div></div><div id="overview-notes" class="notes-grid"></div><p id="overview-notes-empty" class="notes-empty" hidden>Geen belangrijke notities gemarkeerd.</p></section>
+        <section class="panel"><div class="panel-heading"><div><span class="eyebrow">PLANNING</span><h3>Geplande werkzaamheden</h3><p>Werkzaamheden van actieve voertuigen. Binnen 30 dagen of 1.000 km krijgen ze de status ‘Nadert’. De kilometerstatus gebruikt de laatst geregistreerde stand.</p></div></div><div id="overview-reminders" class="overview-list"></div></section>
+      </section>
+      <section id="empty-garage" class="empty-garage" hidden><div class="empty-icon">✳</div><h2>Welkom in je garage</h2><p id="empty-garage-message">Voeg je eerste voertuig toe om de onderhoudshistoriek bij te houden.</p><button class="button button-primary" id="add-first">＋ Voertuig toevoegen</button></section>
+      <div id="dashboard" hidden>
+        <div class="vehicle-overview">
+          <section class="vehicle-header"><div><div class="section-label"><span class="status-dot"></span> <span id="vehicle-status">GESELECTEERD VOERTUIG</span></div><h2 id="vehicle-name"></h2><p id="vehicle-meta"></p></div><div class="vehicle-actions"><button class="button button-outline button-small" id="archive-vehicle">Archiveren</button><button class="button button-outline button-small" id="edit-vehicle">Bewerken</button><button class="button button-quiet button-small danger" id="delete-vehicle">Verwijderen</button></div></section>
+          <div id="vehicle-mileage-card"></div>
+        </div>
+        <section class="stats" aria-label="Samenvatting">
+          <div class="stat"><span>LAATSTE KILOMETERSTAND</span><strong id="stat-odometer">—</strong><small>volgens laatste registratie</small></div>
+          <div class="stat"><span>LOGBOEKREGISTRATIES</span><strong id="stat-count">0</strong><small>onderhoud en waarnemingen</small></div>
+          <div class="stat"><span>LAATSTE ONDERHOUD</span><strong id="stat-date">—</strong><small>meest recente registratie</small></div>
+        </section>
+        <section class="panel chart-panel"><div class="panel-heading"><div><span class="eyebrow">INZICHT</span><h3>Kilometerverloop</h3><p>De kilometerstand doorheen de tijd.</p></div><span class="chart-badge"><span></span> Kilometerstand</span></div><div id="chart" class="chart" aria-label="Grafiek van kilometerstanden doorheen de tijd"></div></section>
+        <section class="panel notes-panel" aria-labelledby="notes-title">
+          <div class="panel-heading history-heading"><div><span class="eyebrow">VOERTUIG</span><h3 id="notes-title">Notities</h3><p>Handige informatie en aandachtspunten voor dit voertuig.</p></div><button class="button button-outline" id="add-note">＋ Notitie toevoegen</button></div>
+          <div id="notes-grid" class="notes-grid"></div>
+          <p id="notes-empty" class="notes-empty" hidden>Nog geen notities voor dit voertuig.</p>
+        </section>
+        <section class="panel" aria-labelledby="reminders-title"><div class="panel-heading history-heading"><div><span class="eyebrow">PLANNING</span><h3 id="reminders-title">Geplande werkzaamheden</h3><p>Stel zelf een datum en/of kilometerstand in.</p></div><button class="button button-outline" id="add-reminder">＋ Werkzaamheid plannen</button></div><div id="reminders-list" class="overview-list"></div></section>
+        <section class="panel history-panel"><div class="panel-heading history-heading"><div><span class="eyebrow">HISTORIEK</span><h3>Uitgevoerde werken</h3><p>Een overzicht van alle geregistreerde onderhoudswerken.</p></div><button class="button button-primary" id="add-maintenance">＋ Onderhoud of waarneming toevoegen</button></div><div class="table-wrap"><table><thead><tr><th>DATUM</th><th>WERKZAAMHEDEN/WAARNEMINGEN</th><th>KILOMETERSTAND</th><th>KOSTEN</th><th><span class="sr-only">Acties</span></th></tr></thead><tbody id="history-body"></tbody></table><div id="history-empty" class="history-empty" hidden>Nog geen onderhoud geregistreerd. Voeg je eerste werkzaamheden toe.</div></div></section>
+        <footer>GEMAAKT VOOR ALLES WAT RIJDT <span>✳</span> GARAGEBOEK</footer>
+      </div>
+    </main>
+  </div>
+  <dialog id="vehicle-dialog"><form id="vehicle-form"><div class="dialog-heading"><div><span class="eyebrow">MIJN GARAGE</span><h2 id="vehicle-dialog-title">Voertuig toevoegen</h2></div><button type="button" class="close-dialog" aria-label="Sluiten">×</button></div><label>Naam <input name="name" maxlength="120" required placeholder="Bijv. Mijn motor"></label><label>Type <select name="type" required><option value="Motorfiets">Motorfiets</option><option value="Auto">Auto</option><option value="Ander rollend materiaal">Ander rollend materiaal</option></select></label><div class="form-row"><label>Merk <input name="make" maxlength="80" placeholder="Bijv. Honda"></label><label>Model <input name="model" maxlength="80" placeholder="Bijv. CB500"></label></div><label>Nummerplaat <input name="license_plate" maxlength="30" placeholder="Optioneel"></label><div class="dialog-actions"><button type="button" class="button button-outline cancel-dialog">Annuleren</button><button class="button button-primary" type="submit">Opslaan</button></div></form></dialog>
+  <dialog id="maintenance-dialog"><form id="maintenance-form"><div class="dialog-heading"><div><span class="eyebrow">ONDERHOUDSHISTORIEK</span><h2 id="maintenance-dialog-title">Onderhoud of waarneming toevoegen</h2></div><button type="button" class="close-dialog" aria-label="Sluiten">×</button></div><div class="form-row"><label>Datum <input name="performed_on" type="date" min="1000-01-01" required></label><label>Kilometerstand <input name="odometer" type="number" min="0" max="4294967295" step="1" required placeholder="0"></label></div><label>Werkzaamheden <input name="title" maxlength="160" required placeholder="Bijv. Olie en filter vervangen"></label><label>Notities <textarea name="description" maxlength="65535" rows="3" placeholder="Details, onderdelen of opmerkingen (optioneel)"></textarea></label><label>Kosten (€) <input name="cost" type="number" min="0" max="99999999.99" step="0.01" placeholder="Optioneel"></label><div class="dialog-actions"><button type="button" class="button button-outline cancel-dialog">Annuleren</button><button class="button button-primary" type="submit">Opslaan</button></div></form></dialog>
+  <dialog id="note-dialog"><form id="note-form"><div class="dialog-heading"><div><span class="eyebrow">VOERTUIGNOTITIE</span><h2 id="note-dialog-title">Notitie toevoegen</h2></div><button type="button" class="close-dialog" aria-label="Sluiten">×</button></div><label>Titel <input name="title" maxlength="120" required placeholder="Bijv. Bandenspanning"></label><label>Notitie <textarea name="content" maxlength="10000" rows="5" required placeholder="Schrijf hier je notitie"></textarea></label><div class="dialog-actions"><button type="button" class="button button-outline cancel-dialog">Annuleren</button><button class="button button-primary" type="submit">Opslaan</button></div></form></dialog>
+  <dialog id="reminder-dialog"><form id="reminder-form"><div class="dialog-heading"><div><span class="eyebrow">PLANNING</span><h2 id="reminder-dialog-title">Werkzaamheid plannen</h2></div><button type="button" class="close-dialog" aria-label="Sluiten">×</button></div><label>Werkzaamheid <input name="title" maxlength="160" required placeholder="Bijv. Olie verversen"></label><div class="form-row"><label>Uiterste datum <input name="due_date" type="date" min="1000-01-01"></label><label>Uiterste kilometerstand <input name="due_odometer" type="number" min="0" max="4294967295" step="1" placeholder="Optioneel"></label></div><p class="form-help">Vul minstens één grens in. De eerste bereikte grens bepaalt de melding.</p><div class="dialog-actions"><button type="button" class="button button-outline cancel-dialog">Annuleren</button><button class="button button-primary" type="submit">Opslaan</button></div></form></dialog>
+</body>
+</html>

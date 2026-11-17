@@ -1,0 +1,17 @@
+{
+  "name": "garageboek",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Onderhoudshistoriek voor voertuigen",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
