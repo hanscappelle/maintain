@@ -43,7 +43,18 @@ td .actions{gap:2px}td button.table-action{display:grid;place-items:center;width
 @media(max-width:650px){.data-bar.data-warning{align-items:stretch}}
 
 html[data-theme="dark"]{color-scheme:dark;background:#151a17;color:#e3e9e3}
-.topbar-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.topbar-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.topbar-actions .button{height:42px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 14px}
+.topbar-actions .theme-toggle{width:42px;padding:0;font-size:17px}
+.warning-dismiss{width:30px;height:30px;flex:0 0 30px;display:grid;place-items:center;padding:0;border:1px solid transparent;border-radius:7px;background:transparent;color:#755f35;font-size:22px;line-height:1}
+.warning-dismiss:hover{background:#f3e8c9}
+.warning-dismiss:focus-visible{outline:2px solid #527d5b;outline-offset:2px}
+html[data-theme="dark"] .warning-dismiss{color:#d2c297}
+html[data-theme="dark"] .warning-dismiss:hover{background:#49402d}
+@media(max-width:850px){.topbar{align-items:flex-start}.topbar-actions{max-width:440px}}
+@media(max-width:650px){.topbar-actions{display:grid;grid-template-columns:repeat(2,40px);gap:6px}.topbar-actions .button{height:40px;padding:0 10px}#add-vehicle span,#export-data span:not([aria-hidden]),#import-data span:not([aria-hidden]){display:none}.topbar-actions .theme-toggle{width:40px}}
+.warning-dismiss{z-index:1}
+@media(max-width:650px){.topbar-actions{grid-template-columns:40px max-content;grid-template-areas:"add export" "theme import";max-width:180px}#add-vehicle{grid-area:add;width:40px}#export-data{grid-area:export}#import-data{grid-area:import}.topbar-actions .theme-toggle{grid-area:theme}#export-data span,#import-data span{display:inline}}
 html[data-theme="dark"] body{background:#151a17;color:#e3e9e3}
 html[data-theme="dark"] .sidebar{background:#1c231f;border-color:#303a33}
 html[data-theme="dark"] .brand{color:#e1e9e2}
@@ -104,3 +115,5 @@ html[data-theme="dark"] .chart svg text{fill:#aab7ac}
 html[data-theme="dark"] .chart svg circle{fill:#1c231f}
 html[data-theme="dark"] .sidebar.collapsed #archive-list:not(:empty){border-color:#3a463e}
 @media(max-width:650px){html[data-theme="dark"] .sidebar{border-bottom-color:#303a33}html[data-theme="dark"] .vehicle-link,html[data-theme="dark"] .sidebar-heading .icon-button{border-color:#3a463e}html[data-theme="dark"] .vehicle-link.active{border-color:#64876a}}
+.data-bar.data-warning{position:relative;align-items:flex-start;padding-right:56px}
+.data-bar.data-warning .warning-dismiss{position:absolute;top:8px;right:8px}
