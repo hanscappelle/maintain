@@ -3,6 +3,7 @@ const store = garageStorage.createStore({
   getItem: key => window.localStorage.getItem(key),
   setItem: (key, value) => window.localStorage.setItem(key, value)
 });
+const DATA_WARNING_DISMISSED_KEY = 'garageboek-data-warning-dismissed';
 const $ = selector => document.querySelector(selector);
 const formatNumber = value => new Intl.NumberFormat('nl-BE').format(value);
 const formatCurrency = value => new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(value);
@@ -18,6 +19,22 @@ function showError(message) {
   notice.hidden = false;
 }
 function clearError() { $('#notice').hidden = true; }
+function setDataWarningDismissed(dismissed) {
+  const warning = $('#data-warning');
+  if (!dismissed && !warning.hidden) return;
+  warning.hidden = dismissed;
+  try {
+    if (dismissed) window.localStorage.setItem(DATA_WARNING_DISMISSED_KEY, 'true');
+    else window.localStorage.removeItem(DATA_WARNING_DISMISSED_KEY);
+  } catch (error) {
+    showError(`Melding kon niet worden opgeslagen: ${error.message}`);
+  }
+}
+try {
+  $('#data-warning').hidden = window.localStorage.getItem(DATA_WARNING_DISMISSED_KEY) === 'true';
+} catch (error) {
+  showError(`Meldingvoorkeur kon niet worden gelezen: ${error.message}`);
+}
 function rememberSelection() {
   try { store.setSelectedVehicleId(state.selectedId); } catch (error) {
     showError(`Voertuigselectie kon niet worden onthouden: ${error.message}`);
@@ -493,6 +510,10 @@ async function submitForm(form, save, dialog, afterSave) {
   } finally { button.disabled = false; }
 }
 for (const selector of ['#add-vehicle', '#add-vehicle-side', '#add-first']) $(selector).addEventListener('click', () => openVehicle());
+$('#dismiss-data-warning').addEventListener('click', () => {
+  setDataWarningDismissed(true);
+  $('#add-vehicle').focus();
+});
 $('#edit-vehicle').addEventListener('click', () => openVehicle(state.vehicles.find(v => v.id === state.selectedId)));
 $('#add-maintenance').addEventListener('click', () => openMaintenance());
 $('#add-note').addEventListener('click', () => openNote());
@@ -501,7 +522,9 @@ for (const button of document.querySelectorAll('.close-dialog, .cancel-dialog'))
 $('#vehicle-form').addEventListener('submit', event => {
   event.preventDefault();
   const id = state.editingVehicle;
+  const startsProject = id === null && state.vehicles.length === 0;
   submitForm(event.currentTarget, data => store.saveVehicle(id, data), $('#vehicle-dialog'), async vehicle => {
+    if (startsProject) setDataWarningDismissed(false);
     state.showingOverview = false;
     await refreshVehicles(vehicle.id);
     rememberView();
@@ -581,6 +604,7 @@ $('#import-file').addEventListener('change', async event => {
     garageStorage.validateData(JSON.parse(contents));
     if (!confirm('Dit bestand vervangt alle gegevens in deze browser. Download eerst een back-up als je de huidige gegevens wilt bewaren. Doorgaan?')) return;
     store.importJson(contents);
+    setDataWarningDismissed(false);
     await refreshVehicles(null);
   } catch (error) {
     showError(`Upload mislukt: ${error instanceof SyntaxError ? 'Het bestand bevat geen geldige JSON.' : error.message}`);
