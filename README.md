@@ -2,6 +2,12 @@
 
 Een web-app met enkel lokale data om voertuigen en hun onderhoudshistoriek bij te houden. Voeg motorfietsen, auto's of ander rollend materiaal toe en registreer per onderhoudsbeurt de datum, kilometerstand, werkzaamheden, notities en optionele kosten. Per voertuig zie je de historiek en een grafiek van de kilometerstand doorheen de tijd. Registraties en voertuigen kunnen worden aangepast of verwijderd.
 
+![Finlit-demo](<assets/Screenshot 2026-11-19 at 10.54.08.png>)
+
+![Finlit-demo](<assets/Screenshot 2026-11-19 at 10.54.15.png>)
+
+![Finlit-demo](<assets/Screenshot 2026-11-19 at 10.54.24.png>)
+
 ## Online versie & Data opslag
 
 De gepubliceerde website is beschikbaar op [betyre.alwaysdata.net/maintain](https://betyre.alwaysdata.net/maintain/). Let op want ook daar slaan wij geen gegvens op. Alle data is enkel in je browser cache beschikbaar. Je browser cache verwijderen betekent dat ook je data weg is. 
