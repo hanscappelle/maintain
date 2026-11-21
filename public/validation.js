@@ -8,12 +8,31 @@ function text(value, name, maxLength, required = false) {
 
 function vehicle(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Ongeldige voertuiggegevens.');
+  const energyType = input.energy_type ?? 'fuel';
+  if (energyType !== 'fuel' && energyType !== 'electric') throw new Error('Kies brandstof of elektrisch als aandrijving.');
+  function decimal(value, name, maxIntegerDigits, maxFractionDigits, minimum, maximum) {
+    if (value === null || value === undefined || value === '') return null;
+    const raw = String(value).trim();
+    const expression = new RegExp(`^\\d{1,${maxIntegerDigits}}([.,]\\d{1,${maxFractionDigits}})?$`);
+    if (!expression.test(raw)) throw new Error(`Geef een geldig ${name} op.`);
+    const number = Number(raw.replace(',', '.'));
+    if (number < minimum || number > maximum) throw new Error(`Geef een geldig ${name} op.`);
+    return raw.replace(',', '.');
+  }
+  const consumption = decimal(input.consumption_per_100, 'gemiddeld verbruik', 4, 2, 0.01, 1000);
+  const energyPrice = decimal(input.energy_price, 'energieprijs', 6, 3, 0, 999999);
+  if ((consumption === null) !== (energyPrice === null)) {
+    throw new Error('Vul zowel het gemiddelde verbruik als de energieprijs in.');
+  }
   return {
     name: text(input.name, 'Naam', 120, true),
     type: text(input.type, 'Type', 50, true),
     make: text(input.make ?? '', 'Merk', 80),
     model: text(input.model ?? '', 'Model', 80),
-    license_plate: text(input.license_plate ?? '', 'Nummerplaat', 30)
+    license_plate: text(input.license_plate ?? '', 'Nummerplaat', 30),
+    energy_type: energyType,
+    consumption_per_100: consumption,
+    energy_price: energyPrice
   };
 }
 

@@ -4,7 +4,7 @@ const garageStorage = (() => {
   const SELECTION_KEY = 'garageboek.selectedVehicle';
   const VIEW_KEY = 'garageboek.lastView';
   const MAX_ID = 4294967295;
-  const empty = () => ({ version: 5, vehicles: [], maintenance: [], notes: [], reminders: [] });
+  const empty = () => ({ version: 6, vehicles: [], maintenance: [], notes: [], reminders: [] });
   const validId = id => Number.isInteger(id) && id > 0 && id <= MAX_ID;
 
   function exactKeys(value, keys) {
@@ -17,22 +17,32 @@ const garageStorage = (() => {
     const previous = data?.version === 2 && exactKeys(data, ['version', 'vehicles', 'maintenance', 'notes']);
     const prior = data?.version === 3 && exactKeys(data, ['version', 'vehicles', 'maintenance', 'notes', 'reminders']);
     const v4 = data?.version === 4 && exactKeys(data, ['version', 'vehicles', 'maintenance', 'notes', 'reminders']);
-    const current = data?.version === 5 && exactKeys(data, ['version', 'vehicles', 'maintenance', 'notes', 'reminders']);
-    if ((!legacy && !previous && !prior && !v4 && !current) || !Array.isArray(data.vehicles) || !Array.isArray(data.maintenance) ||
-        (!legacy && !Array.isArray(data.notes)) || ((current || v4 || prior) && !Array.isArray(data.reminders))) {
+    const v5 = data?.version === 5 && exactKeys(data, ['version', 'vehicles', 'maintenance', 'notes', 'reminders']);
+    const current = data?.version === 6 && exactKeys(data, ['version', 'vehicles', 'maintenance', 'notes', 'reminders']);
+    if ((!legacy && !previous && !prior && !v4 && !v5 && !current) || !Array.isArray(data.vehicles) || !Array.isArray(data.maintenance) ||
+        (!legacy && !Array.isArray(data.notes)) || ((current || v5 || v4 || prior) && !Array.isArray(data.reminders))) {
       throw new Error('Ongeldig of niet-ondersteund Garageboek-bestand.');
     }
     const vehicleIds = new Set(), entryIds = new Set();
     const vehicles = data.vehicles.map(item => {
       const keys = ['id', 'name', 'type', 'make', 'model', 'license_plate'];
-      if (!exactKeys(item, current ? [...keys, 'archived'] : keys) ||
-          (current && typeof item.archived !== 'boolean') ||
+      const archivedKeys = [...keys, 'archived'];
+      const currentKeys = [...archivedKeys, 'energy_type', 'consumption_per_100', 'energy_price'];
+      if (!exactKeys(item, current ? currentKeys : v5 ? archivedKeys : keys) ||
+          ((current || v5) && typeof item.archived !== 'boolean') ||
           !validId(item.id) || vehicleIds.has(item.id) ||
-          !['name', 'type', 'make', 'model', 'license_plate'].every(key => typeof item[key] === 'string')) {
+          !['name', 'type', 'make', 'model', 'license_plate'].every(key => typeof item[key] === 'string') ||
+          (current && (typeof item.energy_type !== 'string' ||
+            (item.consumption_per_100 !== null && typeof item.consumption_per_100 !== 'string') ||
+            (item.energy_price !== null && typeof item.energy_price !== 'string')))) {
         throw new Error('Ongeldig of dubbel voertuig in het bestand.');
       }
       vehicleIds.add(item.id);
-      return { id: item.id, ...validator.vehicle(item), archived: current ? item.archived : false };
+      return {
+        id: item.id,
+        ...validator.vehicle(item),
+        archived: current || v5 ? item.archived : false
+      };
     });
     const maintenance = data.maintenance.map(item => {
       if (!exactKeys(item, ['id', 'vehicle_id', 'performed_on', 'odometer', 'title', 'description', 'cost']) ||
@@ -45,7 +55,7 @@ const garageStorage = (() => {
     });
     const noteIds = new Set();
     const notes = (legacy ? [] : data.notes).map(item => {
-      const hasImportant = current || v4;
+      const hasImportant = current || v5 || v4;
       const keys = hasImportant ? ['id', 'vehicle_id', 'title', 'content', 'important'] : ['id', 'vehicle_id', 'title', 'content'];
       if (!exactKeys(item, keys) || (hasImportant && typeof item.important !== 'boolean') ||
           !validId(item.id) || noteIds.has(item.id) || !vehicleIds.has(item.vehicle_id)) {
@@ -55,7 +65,7 @@ const garageStorage = (() => {
       return { id: item.id, vehicle_id: item.vehicle_id, ...validator.note(item), important: hasImportant ? item.important : false };
     });
     const reminderIds = new Set();
-    const reminders = (current || v4 || prior ? data.reminders : []).map(item => {
+    const reminders = (current || v5 || v4 || prior ? data.reminders : []).map(item => {
       if (!exactKeys(item, ['id', 'vehicle_id', 'title', 'due_date', 'due_odometer']) ||
           !validId(item.id) || reminderIds.has(item.id) || !vehicleIds.has(item.vehicle_id) ||
           (item.due_date !== null && typeof item.due_date !== 'string') ||
@@ -65,7 +75,7 @@ const garageStorage = (() => {
       reminderIds.add(item.id);
       return { id: item.id, vehicle_id: item.vehicle_id, ...validator.reminder(item) };
     });
-    return { version: 5, vehicles, maintenance, notes, reminders };
+    return { version: 6, vehicles, maintenance, notes, reminders };
   }
 
   function parse(json) {
@@ -117,7 +127,16 @@ const garageStorage = (() => {
     }
     const vehicleIds = new Map();
     mergeItems(current.vehicles, incoming.vehicles, vehicleKey, ['name', 'type', 'make', 'model', 'license_plate'],
-      item => item, (source, target) => vehicleIds.set(source.id, target.id));
+      item => item, (source, target) => {
+        vehicleIds.set(source.id, target.id);
+        if (target.consumption_per_100 === null) {
+          target.energy_type = source.energy_type;
+          if (source.consumption_per_100 !== null) {
+            target.consumption_per_100 = source.consumption_per_100;
+            target.energy_price = source.energy_price;
+          }
+        }
+      });
     const withVehicle = item => ({ ...item, vehicle_id: vehicleIds.get(item.vehicle_id) });
     mergeItems(current.maintenance, incoming.maintenance,
       item => JSON.stringify([item.vehicle_id, item.performed_on, item.odometer, item.title]),
