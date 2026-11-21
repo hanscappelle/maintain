@@ -24,7 +24,7 @@ Met de menuknop naast het logo kun je de zijbalk inklappen en weer openen. In de
 
 De grafiek gebruikt de exacte datum en kilometerstand van elke registratie en toont op de kilometeras ronde stappen van minimaal 100 km; de tabel is gesorteerd op datum, nieuwste eerst. Bij meerdere registraties op dezelfde datum geldt de laatst aangemaakte registratie als de meest recente. Kilometerstanden hoeven niet op te lopen, zodat bijvoorbeeld een tellervervanging ook kan worden vastgelegd. De kosten zijn optioneel en worden in euro getoond.
 
-In het vak **Gemiddeld verbruik en energiekost** kun je per voertuig het gemiddelde verbruik en de brandstofprijs per liter of elektriciteitsprijs per kWh invullen. De energiekost per 100 km wordt berekend uit deze waarden. Die wordt samen met de onderhoudskosten meegerekend in de totale kost per kilometer.
+In het vak **Gemiddeld verbruik en energiekost** kun je per voertuig het gemiddelde verbruik en de brandstofprijs per liter of elektriciteitsprijs per kWh invullen. Wijzigingen worden automatisch opgeslagen tijdens het invoeren. De energiekost per 100 km wordt berekend zodra beide waarden zijn ingevuld. Die wordt samen met de onderhoudskosten meegerekend in de totale kost per kilometer.
 
 Bij het verwijderen van een voertuig worden ook alle bijbehorende onderhoudshistoriek, voertuignotities en geplande werkzaamheden permanent verwijderd.
 

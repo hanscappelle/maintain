@@ -77,7 +77,9 @@ test('verbruik en energieprijs worden per voertuig bewaard en gevalideerd', () =
   assert.equal(reloaded.consumption_per_100, '18.4');
   assert.equal(reloaded.energy_price, '0.32');
   assert.equal(JSON.parse(store.exportJson()).version, 6);
-  assert.throws(() => store.saveVehicle(v.id, { ...v, consumption_per_100: '', energy_price: '0.32' }), /zowel het gemiddelde verbruik/);
+  const partial = store.saveVehicle(v.id, { ...v, consumption_per_100: '', energy_price: '0.32' });
+  assert.equal(partial.consumption_per_100, null);
+  assert.equal(partial.energy_price, '0.32');
   assert.throws(() => store.saveVehicle(v.id, { ...v, energy_type: 'diesel' }), /brandstof of elektrisch/);
   assert.throws(() => store.saveVehicle(v.id, { ...v, consumption_per_100: '0' }), /gemiddeld verbruik/);
   assert.throws(() => store.saveVehicle(v.id, { ...v, energy_price: '1.1234' }), /energieprijs/);

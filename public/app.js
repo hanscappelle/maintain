@@ -1,4 +1,5 @@
 const state = { vehicles: [], selectedId: null, entries: [], notes: [], reminders: [], editingVehicle: null, editingEntry: null, editingNote: null, editingReminder: null, showingOverview: false, loadToken: 0 };
+let vehicleConsumptionSaveTimer = null;
 const store = garageStorage.createStore({
   getItem: key => window.localStorage.getItem(key),
   setItem: (key, value) => window.localStorage.setItem(key, value)
@@ -165,6 +166,7 @@ async function loadSelected() {
   $('#archive-vehicle').textContent = vehicle.archived ? 'Terugzetten' : 'Archiveren';
   $('#vehicle-meta').textContent = [vehicle.type, [vehicle.make, vehicle.model].filter(Boolean).join(' '), vehicle.license_plate].filter(Boolean).join('  ·  ');
   fillForm($('#vehicle-consumption-form'), vehicle);
+  $('#vehicle-consumption-error').textContent = '';
   updateVehicleEnergyLabels();
   $('#vehicle-mileage-card').replaceChildren(createMileageCard(vehicle, entries, today()));
   $('#stat-odometer').textContent = entries.length ? `${formatNumber(entries[0].odometer)} km` : '—';
@@ -269,6 +271,32 @@ function updateVehicleEnergyPreview() {
   }
   const per100Km = consumption * price;
   preview.textContent = `Berekende energiekost: ${formatCurrency(per100Km)} per 100 km (${formatCurrency(per100Km / 100)} per km).`;
+}
+function saveVehicleConsumption(vehicleId, data) {
+  const formError = $('#vehicle-consumption-error');
+  try {
+    clearError();
+    const vehicle = state.vehicles.find(item => item.id === vehicleId);
+    if (!vehicle) throw new Error('Het voertuig voor deze wijziging is niet meer beschikbaar.');
+    const savedVehicle = store.saveVehicle(vehicleId, { ...vehicle, ...data });
+    state.vehicles = state.vehicles.map(item => item.id === vehicleId ? savedVehicle : item);
+    formError.textContent = '';
+    if (state.selectedId === vehicleId && !$('#dashboard').hidden) {
+      $('#vehicle-mileage-card').replaceChildren(createMileageCard(savedVehicle, state.entries, today()));
+    }
+  } catch (error) {
+    formError.textContent = error.message;
+  }
+}
+function scheduleVehicleConsumptionSave(delay) {
+  if (vehicleConsumptionSaveTimer !== null) clearTimeout(vehicleConsumptionSaveTimer);
+  const form = $('#vehicle-consumption-form');
+  const vehicleId = state.selectedId;
+  const data = Object.fromEntries(new FormData(form));
+  vehicleConsumptionSaveTimer = setTimeout(() => {
+    vehicleConsumptionSaveTimer = null;
+    saveVehicleConsumption(vehicleId, data);
+  }, delay);
 }
 function createMileageCard(vehicle, entries, day, inOverview = false) {
   const row = element('article', 'overview-mileage-card'), info = element('div', 'overview-mileage-info');
@@ -587,17 +615,22 @@ $('#vehicle-form').addEventListener('submit', event => {
 });
 $('#vehicle-consumption-form').addEventListener('submit', event => {
   event.preventDefault();
-  const id = state.selectedId;
-  const vehicle = state.vehicles.find(item => item.id === id);
-  if (!vehicle) {
-    showError('Selecteer eerst een voertuig.');
-    return;
-  }
-  submitForm(event.currentTarget, data => store.saveVehicle(id, { ...vehicle, ...data }), null, async () => refreshVehicles(id));
+  scheduleVehicleConsumptionSave(0);
 });
-$('#vehicle-energy-type').addEventListener('change', updateVehicleEnergyLabels);
-$('#vehicle-consumption-form [name=consumption_per_100]').addEventListener('input', updateVehicleEnergyPreview);
-$('#vehicle-consumption-form [name=energy_price]').addEventListener('input', updateVehicleEnergyPreview);
+$('#vehicle-energy-type').addEventListener('change', () => {
+  updateVehicleEnergyLabels();
+  scheduleVehicleConsumptionSave(0);
+});
+$('#vehicle-consumption-form [name=consumption_per_100]').addEventListener('input', () => {
+  updateVehicleEnergyPreview();
+  scheduleVehicleConsumptionSave(500);
+});
+$('#vehicle-consumption-form [name=energy_price]').addEventListener('input', () => {
+  updateVehicleEnergyPreview();
+  scheduleVehicleConsumptionSave(500);
+});
+$('#vehicle-consumption-form [name=consumption_per_100]').addEventListener('change', () => scheduleVehicleConsumptionSave(0));
+$('#vehicle-consumption-form [name=energy_price]').addEventListener('change', () => scheduleVehicleConsumptionSave(0));
 $('#maintenance-form').addEventListener('submit', event => {
   event.preventDefault();
   const vehicleId = state.selectedId, id = state.editingEntry;

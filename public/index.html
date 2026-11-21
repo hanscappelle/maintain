@@ -17,12 +17,12 @@
   </script>
   <link rel="stylesheet" href="style.css?v=6">
   <script src="theme.js" defer></script>
-  <script src="validation.js?v=6" defer></script>
+  <script src="validation.js?v=7" defer></script>
   <script src="storage.js?v=6" defer></script>
   <script src="insights.js?v=6" defer></script>
   <script src="download.js" defer></script>
   <script src="links.js" defer></script>
-  <script src="app.js?v=6" defer></script>
+  <script src="app.js?v=7" defer></script>
 </head>
 <body>
   <div class="app">
@@ -89,7 +89,7 @@
             </div>
             <p class="form-help">De energiekost per 100 km wordt berekend uit deze waarden en telt mee in de kost per km.</p>
             <p id="vehicle-energy-preview" class="energy-preview" aria-live="polite"></p>
-            <div class="dialog-actions"><button class="button button-primary" type="submit">Verbruik opslaan</button></div>
+            <p id="vehicle-consumption-error" class="form-error" role="alert"></p>
           </form>
         </section>
         <section class="panel notes-panel" aria-labelledby="notes-title">

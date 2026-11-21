@@ -21,9 +21,6 @@ function vehicle(input) {
   }
   const consumption = decimal(input.consumption_per_100, 'gemiddeld verbruik', 4, 2, 0.01, 1000);
   const energyPrice = decimal(input.energy_price, 'energieprijs', 6, 3, 0, 999999);
-  if ((consumption === null) !== (energyPrice === null)) {
-    throw new Error('Vul zowel het gemiddelde verbruik als de energieprijs in.');
-  }
   return {
     name: text(input.name, 'Naam', 120, true),
     type: text(input.type, 'Type', 50, true),
