@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { vehicleStats, annualCost, mileageSparkline, mileageAxis, reminderStatus, overviewReminders } = require('../public/insights');
+const { vehicleStats, annualCost, costPerKilometer, mileageSparkline, mileageAxis, reminderStatus, overviewReminders } = require('../public/insights');
 
 test('kilometerstatistiek gebruikt chronologie en negeert toekomstige registraties', () => {
   const entries = [
@@ -30,6 +30,21 @@ test('gemiddelde kost gebruikt kalenderjaren met registraties tot en met vandaag
   assert.deepEqual(annualCost(entries.slice(3, 4), '2026-11-16'), { perYear: 0, missingCount: 0 });
   assert.deepEqual(annualCost(entries, '2021-12-31'), { perYear: null, missingCount: 0 });
   assert.deepEqual(annualCost([], '2026-11-16'), { perYear: null, missingCount: 0 });
+});
+
+test('kost per kilometer deelt bekende kosten door de geldige geregistreerde afstand', () => {
+  const entries = [
+    { id: 1, performed_on: '2022-01-01', odometer: 1000, cost: '100.25' },
+    { id: 2, performed_on: '2022-12-01', odometer: 1500, cost: 49.75 },
+    { id: 3, performed_on: '2026-01-01', odometer: 2000, cost: null },
+    { id: 4, performed_on: '2026-12-01', odometer: 100000, cost: 1000 }
+  ];
+  assert.deepEqual(costPerKilometer(entries, '2026-11-16'), { perKilometer: 0.15, missingCount: 1 });
+  assert.deepEqual(costPerKilometer(entries.slice(0, 1), '2026-11-16'), { perKilometer: null, missingCount: 0 });
+  assert.deepEqual(costPerKilometer([{ ...entries[0], cost: null }, { ...entries[1], cost: null }], '2026-11-16'), { perKilometer: null, missingCount: 2 });
+  assert.deepEqual(costPerKilometer([{ ...entries[0], odometer: 2000 }, { ...entries[1], odometer: 1000 }], '2026-11-16'), { perKilometer: null, missingCount: 0 });
+  assert.deepEqual(costPerKilometer([{ ...entries[0], odometer: 1000 }, { ...entries[1], odometer: 1000 }], '2026-11-16'), { perKilometer: null, missingCount: 0 });
+  assert.deepEqual(costPerKilometer([], '2026-11-16'), { perKilometer: null, missingCount: 0 });
 });
 
 test('achtergrondgrafiek volgt datums en kilometerstanden en sluit toekomstige punten uit', () => {

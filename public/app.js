@@ -230,6 +230,16 @@ function createMileageSparkline(entries, day) {
   svg.append(line);
   return svg;
 }
+function vehicleCostPerKilometer(entries, day, distance) {
+  if (typeof garageInsights.costPerKilometer === 'function') {
+    return garageInsights.costPerKilometer(entries, day);
+  }
+  const knownCosts = entries.filter(entry => entry.performed_on <= day && entry.cost !== null);
+  const total = knownCosts.reduce((sum, entry) => sum + Number(entry.cost), 0);
+  return {
+    perKilometer: knownCosts.length && distance !== null && distance > 0 ? total / distance : null
+  };
+}
 function createMileageCard(vehicle, entries, day, inOverview = false) {
   const row = element('article', 'overview-mileage-card'), info = element('div', 'overview-mileage-info');
   const sparkline = createMileageSparkline(entries, day);
@@ -246,11 +256,17 @@ function createMileageCard(vehicle, entries, day, inOverview = false) {
   }
   info.append(description);
   const costs = garageInsights.annualCost(entries, day);
+  const costPerKilometer = vehicleCostPerKilometer(entries, day, stats.distance);
   const costDescription = element('p', '', 'Gemiddelde kost: ');
   if (costs.perYear === null) {
     costDescription.append('geen kosten geregistreerd.');
   } else {
-    costDescription.append(element('strong', '', `${formatCurrency(costs.perYear)} per kalenderjaar`), '.');
+    costDescription.append(element('strong', '', `${formatCurrency(costs.perYear)} per kalenderjaar`));
+    if (costPerKilometer.perKilometer === null) {
+      costDescription.append('; kost per kilometer niet beschikbaar.');
+    } else {
+      costDescription.append(' en ', element('strong', '', `${formatCurrency(costPerKilometer.perKilometer)} per km`), '.');
+    }
   }
   info.append(costDescription);
   row.append(info);
