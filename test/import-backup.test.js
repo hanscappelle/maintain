@@ -7,7 +7,7 @@ const { downloadFilename } = require('../public/download');
 
 function setup() {
   const values = new Map(), elements = new Map(), downloads = [];
-  let downloadError = null, accepted = true;
+  let downloadError = null, choice = 'replace';
   const confirmations = [];
   const localStorage = {
     getItem: key => values.get(key) ?? null,
@@ -19,6 +19,14 @@ function setup() {
       listeners: {},
       classList: { contains: () => false, toggle() {} },
       addEventListener(type, handler) { this.listeners[type] = handler; },
+      showModal() {
+        confirmations.push({
+          current: elements.get('#import-current').textContent,
+          incoming: elements.get('#import-incoming').textContent
+        });
+        this.returnValue = choice;
+        this.listeners.close();
+      },
       append() {}, remove() {}, replaceChildren() {}, setAttribute() {}, removeAttribute() {},
       click() {
         if (downloadError) throw downloadError;
@@ -45,8 +53,7 @@ function setup() {
     downloadFilename: () => downloadFilename(new Date(2026, 10, 21)),
     Blob,
     URL: { createObjectURL(value) { blob = value; return 'blob:backup'; }, revokeObjectURL() {} },
-    setTimeout() {},
-    confirm: message => { confirmations.push(message); return accepted; }
+    setTimeout() {}
   });
   const originalCreateElement = document.createElement;
   document.createElement = () => {
@@ -56,7 +63,7 @@ function setup() {
   };
   return {
     store, downloads, elements, confirmations,
-    setAccepted(value) { accepted = value; },
+    setChoice(value) { choice = value; },
     failDownload() { downloadError = new Error('Download geblokkeerd'); },
     async upload(contents, size = Buffer.byteLength(contents)) {
       const input = { files: [{ size, text: async () => contents }], value: 'bestand.json' };
@@ -85,8 +92,8 @@ test('import downloadt de volledige oorspronkelijke gegevens voordat ze worden v
   assert.equal(app.downloads.length, 1);
   assert.equal(await app.downloads[0].blob.text(), before);
   assert.equal(app.downloads[0].filename, 'garageboek-2026-11-21_00-00-00.json');
-  assert.match(app.confirmations[0], /Huidige sessie: 1 voertuigen, 3 records/);
-  assert.match(app.confirmations[0], /Te openen bestand: 0 voertuigen, 0 records/);
+  assert.equal(app.confirmations[0].current, 'Huidige sessie: 1 voertuigen, 3 records');
+  assert.equal(app.confirmations[0].incoming, 'Te openen bestand: 0 voertuigen, 0 records');
   assert.equal(app.store.exportJson(), replacement);
 });
 
@@ -98,11 +105,10 @@ test('bevestiging vergelijkt alle records inclusief gearchiveerde voertuigen', a
   const other = app.store.saveVehicle(null, { ...vehicle, name: 'Auto', type: 'Auto' });
   app.store.saveNote(other.id, null, { title: 'Sleutel', content: 'Reserve' });
   const before = app.store.exportJson();
-  app.setAccepted(false);
+  app.setChoice('cancel');
   await app.upload(uploaded.store.exportJson());
-  assert.match(app.confirmations[0], /Huidige sessie: 2 voertuigen, 4 records/);
-  assert.match(app.confirmations[0], /Te openen bestand: 1 voertuigen, 3 records/);
-  assert.match(app.confirmations[0], /onderhoudsregistraties, notities en geplande werkzaamheden/);
+  assert.equal(app.confirmations[0].current, 'Huidige sessie: 2 voertuigen, 4 records');
+  assert.equal(app.confirmations[0].incoming, 'Te openen bestand: 1 voertuigen, 3 records');
   assert.equal(app.store.exportJson(), before);
   assert.equal(app.downloads.length, 0);
 });
@@ -110,19 +116,19 @@ test('bevestiging vergelijkt alle records inclusief gearchiveerde voertuigen', a
 test('bevestiging telt ontbrekende categorieën in oudere bestanden als nul', async () => {
   const app = setup();
   const legacy = { version: 1, vehicles: [{ id: 1, ...vehicle }], maintenance: [] };
-  app.setAccepted(false);
+  app.setChoice('cancel');
   await app.upload(JSON.stringify(legacy));
-  assert.match(app.confirmations[0], /Huidige sessie: 0 voertuigen, 0 records/);
-  assert.match(app.confirmations[0], /Te openen bestand: 1 voertuigen, 0 records/);
+  assert.equal(app.confirmations[0].current, 'Huidige sessie: 0 voertuigen, 0 records');
+  assert.equal(app.confirmations[0].incoming, 'Te openen bestand: 1 voertuigen, 0 records');
 });
 
 test('annuleren en ongeldige of te grote bestanden starten geen backup en vervangen niets', async () => {
   const app = setup();
   populatedStore(app.store);
   const before = app.store.exportJson();
-  app.setAccepted(false);
+  app.setChoice('cancel');
   await app.upload(before);
-  app.setAccepted(true);
+  app.setChoice('replace');
   await app.upload('{');
   await app.upload(JSON.stringify({ version: 5 }));
   await app.upload(before, 10 * 1024 * 1024 + 1);
@@ -149,4 +155,16 @@ test('een fout bij het starten van de backup voorkomt de import', async () => {
   await app.upload(storage.createStore({ getItem: () => null }).exportJson());
   assert.equal(app.store.exportJson(), before);
   assert.match(app.elements.get('#notice').textContent, /Back-up maken mislukt: Download geblokkeerd/);
+});
+
+test('samenvoegen start eerst een backup en behoudt de oorspronkelijke gegevens', async () => {
+  const app = setup(), uploaded = setup();
+  populatedStore(app.store);
+  uploaded.store.saveVehicle(null, { ...vehicle, name: 'Auto', type: 'Auto' });
+  const before = app.store.exportJson();
+  app.setChoice('merge');
+  await app.upload(uploaded.store.exportJson());
+  assert.equal(await app.downloads[0].blob.text(), before);
+  assert.deepEqual(app.store.listVehicles().map(item => item.name), ['Auto', 'Motor']);
+  assert.equal(app.store.read().maintenance.length, 1);
 });

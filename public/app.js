@@ -598,6 +598,16 @@ function importSummary(data) {
   const records = data.maintenance.length + data.notes.length + data.reminders.length;
   return `${formatNumber(data.vehicles.length)} voertuigen, ${formatNumber(records)} records`;
 }
+function chooseImport(current, imported) {
+  const dialog = $('#import-dialog');
+  $('#import-current').textContent = `Huidige sessie: ${importSummary(current)}`;
+  $('#import-incoming').textContent = `Te openen bestand: ${importSummary(imported)}`;
+  dialog.returnValue = '';
+  return new Promise(resolve => {
+    dialog.addEventListener('close', () => resolve(dialog.returnValue), { once: true });
+    dialog.showModal();
+  });
+}
 $('#export-data').addEventListener('click', () => {
   try { clearError(); downloadBackup(); } catch (error) { showError(`Download mislukt: ${error.message}`); }
 });
@@ -612,11 +622,15 @@ $('#import-file').addEventListener('change', async event => {
     const contents = await file.text();
     const imported = garageStorage.validateData(JSON.parse(contents));
     const current = store.read();
-    if (!confirm(`Huidige sessie: ${importSummary(current)}\nTe openen bestand: ${importSummary(imported)}\n\nRecords omvatten onderhoudsregistraties, notities en geplande werkzaamheden. Gearchiveerde voertuigen tellen mee.\n\nDit bestand vervangt alle gegevens in deze browser. Eerst wordt automatisch een back-up van de huidige gegevens gedownload. Doorgaan?`)) return;
+    const snapshot = JSON.stringify(current);
+    const choice = await chooseImport(current, imported);
+    if (choice !== 'replace' && choice !== 'merge') return;
+    if (JSON.stringify(store.read()) !== snapshot) throw new Error('De huidige gegevens zijn gewijzigd. Open het bestand opnieuw om de aantallen te vergelijken.');
     try { downloadBackup(); } catch (error) { throw new Error(`Back-up maken mislukt: ${error.message}`); }
-    store.importJson(contents);
+    if (choice === 'replace') store.importJson(contents);
+    else store.mergeJson(contents);
     setDataWarningDismissed(false);
-    await refreshVehicles(null);
+    await refreshVehicles(choice === 'replace' ? null : state.selectedId);
   } catch (error) {
     showError(`Upload mislukt: ${error instanceof SyntaxError ? 'Het bestand bevat geen geldige JSON.' : error.message}`);
   } finally { input.value = ''; }

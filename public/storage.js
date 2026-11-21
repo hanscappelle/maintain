@@ -77,6 +77,58 @@ const garageStorage = (() => {
     return validateData(data);
   }
 
+  function mergeData(current, incoming) {
+    function index(items, key) {
+      const entries = new Map();
+      for (const item of items) {
+        const value = key(item);
+        if (!entries.has(value)) entries.set(value, []);
+        entries.get(value).push(item);
+      }
+      return entries;
+    }
+    function vehicleKey(vehicle) {
+      return JSON.stringify(vehicle.license_plate
+        ? ['plaat', vehicle.license_plate]
+        : ['zonder plaat', vehicle.name, vehicle.make, vehicle.model]);
+    }
+    function mergeItems(existing, additions, key, textFields, transform = item => item, onMatch = () => {}) {
+      const entries = index(existing, key), matched = new Set();
+      let next = existing.reduce((max, item) => Math.max(max, item.id), 0);
+      for (const addition of additions) {
+        const item = transform(addition), value = key(item), matches = entries.get(value) ?? [];
+        if (matches.length > 1 || (matches.length === 1 && matched.has(matches[0]))) {
+          throw new Error('Samenvoegen niet mogelijk: meerdere voertuigen of records hebben dezelfde herkenningsgegevens.');
+        }
+        let target = matches[0];
+        if (target) {
+          for (const field of textFields) {
+            if (item[field].length > target[field].length) target[field] = item[field];
+          }
+        } else {
+          if (next >= MAX_ID) throw new Error('Er zijn geen nieuwe identificatienummers beschikbaar.');
+          target = { ...item, id: ++next };
+          existing.push(target);
+          entries.set(value, [target]);
+        }
+        matched.add(target);
+        onMatch(addition, target);
+      }
+    }
+    const vehicleIds = new Map();
+    mergeItems(current.vehicles, incoming.vehicles, vehicleKey, ['name', 'type', 'make', 'model', 'license_plate'],
+      item => item, (source, target) => vehicleIds.set(source.id, target.id));
+    const withVehicle = item => ({ ...item, vehicle_id: vehicleIds.get(item.vehicle_id) });
+    mergeItems(current.maintenance, incoming.maintenance,
+      item => JSON.stringify([item.vehicle_id, item.performed_on, item.odometer, item.title]),
+      ['description'], withVehicle);
+    mergeItems(current.notes, incoming.notes,
+      item => JSON.stringify([item.vehicle_id, item.title]), ['content'], withVehicle);
+    mergeItems(current.reminders, incoming.reminders,
+      item => JSON.stringify([item.vehicle_id, item.title]), [], withVehicle);
+    return validateData(current);
+  }
+
   function createStore(storage) {
     function read() {
       const json = storage.getItem(KEY);
@@ -135,6 +187,7 @@ const garageStorage = (() => {
         storage.setItem(SELECTION_KEY, String(id));
       },
       importJson(json) { const data = parse(json); write(data); },
+      mergeJson(json) { const data = mergeData(read(), parse(json)); write(data); },
       exportJson() { return JSON.stringify(read(), null, 2) + '\n'; },
       listVehicles() { return read().vehicles.sort((a, b) => a.name.localeCompare(b.name, 'nl') || a.id - b.id); },
       listMaintenance(vehicleId) {
