@@ -118,3 +118,5 @@ html[data-theme="dark"] .sidebar.collapsed #archive-list:not(:empty){border-colo
 @media(max-width:650px){html[data-theme="dark"] .sidebar{border-bottom-color:#303a33}html[data-theme="dark"] .vehicle-link,html[data-theme="dark"] .sidebar-heading .icon-button{border-color:#3a463e}html[data-theme="dark"] .vehicle-link.active{border-color:#64876a}}
 .data-bar.data-warning{position:relative;align-items:flex-start;padding-right:56px}
 .data-bar.data-warning .warning-dismiss{position:absolute;top:8px;right:8px}
+@media(max-width:650px){#export-data span:not([aria-hidden]),#import-data span:not([aria-hidden]){display:inline}}
+@media(max-width:650px){.topbar{flex-direction:column;gap:12px}.topbar-actions{display:flex;width:100%;max-width:none;justify-content:flex-start;gap:6px}}
