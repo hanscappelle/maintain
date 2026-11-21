@@ -579,18 +579,27 @@ async function deleteReminder(reminder, completed) {
   if (!confirm(question)) return;
   try { clearError(); store.deleteReminder(vehicleId, reminder.id); await refreshVehicles(vehicleId); } catch (error) { showError(error.message); }
 }
-$('#export-data').addEventListener('click', () => {
+function downloadBackup() {
+  const json = store.exportJson();
+  const filename = downloadFilename();
+  const link = element('a');
+  const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
   try {
-    clearError();
-    const url = URL.createObjectURL(new Blob([store.exportJson()], { type: 'application/json' }));
-    const link = element('a');
     link.href = url;
-    link.download = downloadFilename();
+    link.download = filename;
     document.body.append(link);
     link.click();
+  } finally {
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-  } catch (error) { showError(`Download mislukt: ${error.message}`); }
+  }
+}
+function importSummary(data) {
+  const records = data.maintenance.length + data.notes.length + data.reminders.length;
+  return `${formatNumber(data.vehicles.length)} voertuigen, ${formatNumber(records)} records`;
+}
+$('#export-data').addEventListener('click', () => {
+  try { clearError(); downloadBackup(); } catch (error) { showError(`Download mislukt: ${error.message}`); }
 });
 $('#import-data').addEventListener('click', () => $('#import-file').click());
 $('#import-file').addEventListener('change', async event => {
@@ -601,8 +610,10 @@ $('#import-file').addEventListener('change', async event => {
     clearError();
     if (file.size > 10 * 1024 * 1024) throw new Error('Het bestand is groter dan 10 MB.');
     const contents = await file.text();
-    garageStorage.validateData(JSON.parse(contents));
-    if (!confirm('Dit bestand vervangt alle gegevens in deze browser. Download eerst een back-up als je de huidige gegevens wilt bewaren. Doorgaan?')) return;
+    const imported = garageStorage.validateData(JSON.parse(contents));
+    const current = store.read();
+    if (!confirm(`Huidige sessie: ${importSummary(current)}\nTe openen bestand: ${importSummary(imported)}\n\nRecords omvatten onderhoudsregistraties, notities en geplande werkzaamheden. Gearchiveerde voertuigen tellen mee.\n\nDit bestand vervangt alle gegevens in deze browser. Eerst wordt automatisch een back-up van de huidige gegevens gedownload. Doorgaan?`)) return;
+    try { downloadBackup(); } catch (error) { throw new Error(`Back-up maken mislukt: ${error.message}`); }
     store.importJson(contents);
     setDataWarningDismissed(false);
     await refreshVehicles(null);
