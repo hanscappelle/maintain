@@ -77,6 +77,77 @@ test('JSON export en import behouden alle gegevens en vervangen de bestaande geg
   assert.equal(destination.saveMaintenance(v.id, null, entry).id, 2);
 });
 
+test('samenvoegen herkent voertuigen en records en behoudt de langste tekst', () => {
+  const current = createStore(memory()), incoming = createStore(memory());
+  const a = current.saveVehicle(null, { ...vehicle, license_plate: '1-ABC-123' });
+  current.saveMaintenance(a.id, null, { ...entry, description: 'Kort', cost: '10' });
+  const note = current.saveNote(a.id, null, { title: 'Sleutel', content: 'Kort' });
+  current.setNoteImportant(a.id, note.id, true);
+  current.saveReminder(a.id, null, { title: 'Service', due_date: '2027-01-01', due_odometer: null });
+  current.setVehicleArchived(a.id, true);
+
+  const b = incoming.saveVehicle(null, { ...vehicle, name: 'Lange motornaam', license_plate: '1-ABC-123' });
+  incoming.saveMaintenance(b.id, null, { ...entry, description: 'Een langere beschrijving', cost: '100' });
+  incoming.saveNote(b.id, null, { title: 'Sleutel', content: 'Een langere notitie' });
+  incoming.saveReminder(b.id, null, { title: 'Service', due_date: '2028-01-01', due_odometer: 50000 });
+  const other = incoming.saveVehicle(null, { ...vehicle, name: 'Auto', type: 'Auto', license_plate: '2-DEF-456' });
+  incoming.saveNote(other.id, null, { title: 'Anders', content: 'Bij de auto' });
+
+  current.mergeJson(incoming.exportJson());
+  const data = current.read();
+  assert.equal(data.vehicles.length, 2);
+  assert.equal(data.vehicles[0].name, 'Lange motornaam');
+  assert.equal(data.vehicles[0].archived, true);
+  assert.equal(data.maintenance.length, 1);
+  assert.equal(data.maintenance[0].description, 'Een langere beschrijving');
+  assert.equal(data.maintenance[0].cost, '10');
+  assert.equal(data.notes.find(item => item.id === note.id).content, 'Een langere notitie');
+  assert.equal(data.notes.find(item => item.id === note.id).important, true);
+  assert.equal(data.reminders[0].due_date, '2027-01-01');
+  assert.equal(data.reminders[0].due_odometer, null);
+  const importedVehicle = data.vehicles.find(item => item.name === 'Auto');
+  assert.notEqual(importedVehicle.id, a.id);
+  assert.equal(data.notes.find(item => item.title === 'Anders').vehicle_id, importedVehicle.id);
+});
+
+test('samenvoegen zonder nummerplaat gebruikt naam merk en model en houdt gelijke tekstlengte aan', () => {
+  const current = createStore(memory()), incoming = createStore(memory());
+  const a = current.saveVehicle(null, vehicle);
+  current.saveNote(a.id, null, { title: 'Info', content: 'abcd' });
+  const b = incoming.saveVehicle(null, { ...vehicle, type: 'Auto' });
+  incoming.saveNote(b.id, null, { title: 'Info', content: 'wxyz' });
+  incoming.saveNote(b.id, null, { title: 'Nieuw', content: 'Toegevoegd' });
+  current.mergeJson(incoming.exportJson());
+  assert.equal(current.read().vehicles.length, 1);
+  assert.equal(current.read().vehicles[0].type, 'Motorfiets');
+  assert.equal(current.listNotes(a.id).find(item => item.title === 'Info').content, 'abcd');
+  assert.equal(current.listNotes(a.id).length, 2);
+});
+
+test('ongeldige en dubbelzinnige samenvoegingen wijzigen de opslag niet', () => {
+  const current = createStore(memory()), incoming = createStore(memory());
+  const a = current.saveVehicle(null, vehicle);
+  current.saveNote(a.id, null, { title: 'Info', content: 'Eerste' });
+  current.saveNote(a.id, null, { title: 'Info', content: 'Tweede' });
+  const b = incoming.saveVehicle(null, vehicle);
+  incoming.saveNote(b.id, null, { title: 'Info', content: 'Derde' });
+  const before = current.exportJson();
+  assert.throws(() => current.mergeJson(incoming.exportJson()), /meerdere voertuigen of records/);
+  assert.equal(current.exportJson(), before);
+  assert.throws(() => current.mergeJson('{'));
+  assert.equal(current.exportJson(), before);
+});
+
+test('samenvoegen ondersteunt oudere bestanden zonder notities of planning', () => {
+  const current = createStore(memory());
+  const old = { version: 1, vehicles: [{ id: 1, ...vehicle }], maintenance: [{ id: 1, vehicle_id: 1, ...entry }] };
+  current.mergeJson(JSON.stringify(old));
+  assert.equal(current.read().vehicles.length, 1);
+  assert.equal(current.read().maintenance.length, 1);
+  assert.deepEqual(current.read().notes, []);
+  assert.deepEqual(current.read().reminders, []);
+});
+
 test('ongeldige en onvolledige bestanden vervangen bestaande gegevens niet', () => {
   const store = createStore(memory());
   const v = store.saveVehicle(null, vehicle);
