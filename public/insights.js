@@ -36,6 +36,13 @@ const garageInsights = (() => {
       missingCount: ordered.length - knownCosts.length
     };
   }
+  function energyCostPerKilometer(vehicle) {
+    if (vehicle.consumption_per_100 === null || vehicle.energy_price === null) {
+      return { per100Km: null, perKilometer: null };
+    }
+    const per100Km = Number(vehicle.consumption_per_100) * Number(vehicle.energy_price);
+    return { per100Km, perKilometer: per100Km / 100 };
+  }
   function mileageSparkline(entries, today) {
     const ordered = chronologicalEntries(entries, today);
     if (ordered.length < 2 || ordered[0].performed_on === ordered.at(-1).performed_on) return [];
@@ -86,6 +93,6 @@ const garageInsights = (() => {
       attentionCount: result.filter(item => item.status === 'due' || item.status === 'upcoming').length
     };
   }
-  return { vehicleStats, annualCost, costPerKilometer, mileageSparkline, mileageAxis, reminderStatus, overviewReminders };
+  return { vehicleStats, annualCost, costPerKilometer, energyCostPerKilometer, mileageSparkline, mileageAxis, reminderStatus, overviewReminders };
 })();
 if (typeof module !== 'undefined') module.exports = garageInsights;

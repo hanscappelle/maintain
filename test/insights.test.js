@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { vehicleStats, annualCost, costPerKilometer, mileageSparkline, mileageAxis, reminderStatus, overviewReminders } = require('../public/insights');
+const { vehicleStats, annualCost, costPerKilometer, energyCostPerKilometer, mileageSparkline, mileageAxis, reminderStatus, overviewReminders } = require('../public/insights');
 
 test('kilometerstatistiek gebruikt chronologie en negeert toekomstige registraties', () => {
   const entries = [
@@ -45,6 +45,19 @@ test('kost per kilometer deelt bekende kosten door de geldige geregistreerde afs
   assert.deepEqual(costPerKilometer([{ ...entries[0], odometer: 2000 }, { ...entries[1], odometer: 1000 }], '2026-11-16'), { perKilometer: null, missingCount: 0 });
   assert.deepEqual(costPerKilometer([{ ...entries[0], odometer: 1000 }, { ...entries[1], odometer: 1000 }], '2026-11-16'), { perKilometer: null, missingCount: 0 });
   assert.deepEqual(costPerKilometer([], '2026-11-16'), { perKilometer: null, missingCount: 0 });
+});
+
+test('energiekosten per 100 km worden omgerekend naar de kost per km', () => {
+  const fuel = { consumption_per_100: '6.5', energy_price: '1.75' };
+  assert.deepEqual(energyCostPerKilometer(fuel), { per100Km: 11.375, perKilometer: 0.11375 });
+  assert.deepEqual(energyCostPerKilometer({ consumption_per_100: '18', energy_price: '0.32' }), {
+    per100Km: 5.76,
+    perKilometer: 0.0576
+  });
+  assert.deepEqual(energyCostPerKilometer({ consumption_per_100: null, energy_price: null }), {
+    per100Km: null,
+    perKilometer: null
+  });
 });
 
 test('achtergrondgrafiek volgt datums en kilometerstanden en sluit toekomstige punten uit', () => {

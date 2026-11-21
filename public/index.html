@@ -15,14 +15,14 @@
       document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
   </script>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=6">
   <script src="theme.js" defer></script>
-  <script src="validation.js" defer></script>
-  <script src="storage.js" defer></script>
-  <script src="insights.js" defer></script>
+  <script src="validation.js?v=6" defer></script>
+  <script src="storage.js?v=6" defer></script>
+  <script src="insights.js?v=6" defer></script>
   <script src="download.js" defer></script>
   <script src="links.js" defer></script>
-  <script src="app.js" defer></script>
+  <script src="app.js?v=6" defer></script>
 </head>
 <body>
   <div class="app">
@@ -70,6 +70,28 @@
           <div class="stat"><span>LAATSTE ONDERHOUD</span><strong id="stat-date">—</strong><small>meest recente registratie</small></div>
         </section>
         <section class="panel chart-panel"><div class="panel-heading"><div><span class="eyebrow">INZICHT</span><h3>Kilometerverloop</h3><p>De kilometerstand doorheen de tijd.</p></div><span class="chart-badge"><span></span> Kilometerstand</span></div><div id="chart" class="chart" aria-label="Grafiek van kilometerstanden doorheen de tijd"></div></section>
+        <section class="panel consumption-panel" aria-labelledby="consumption-title">
+          <div class="panel-heading"><div><span class="eyebrow">VERBRUIK</span><h3 id="consumption-title">Gemiddeld verbruik en energiekost</h3><p>Vul het gemiddelde verbruik en de prijs per liter of kWh in.</p></div></div>
+          <form id="vehicle-consumption-form">
+            <label>Aandrijving
+              <select id="vehicle-energy-type" name="energy_type">
+                <option value="fuel">Brandstof</option>
+                <option value="electric">Elektrisch</option>
+              </select>
+            </label>
+            <div class="form-row">
+              <label>Gemiddeld verbruik (<span id="vehicle-consumption-unit">L/100 km</span>)
+                <input name="consumption_per_100" type="number" min="0.01" max="1000" step="0.01" inputmode="decimal" placeholder="Bijv. 6,5">
+              </label>
+              <label><span id="vehicle-energy-price-label">Brandstofprijs (€/L)</span>
+                <input name="energy_price" type="number" min="0" max="999999" step="0.001" inputmode="decimal" placeholder="Bijv. 1,75">
+              </label>
+            </div>
+            <p class="form-help">De energiekost per 100 km wordt berekend uit deze waarden en telt mee in de kost per km.</p>
+            <p id="vehicle-energy-preview" class="energy-preview" aria-live="polite"></p>
+            <div class="dialog-actions"><button class="button button-primary" type="submit">Verbruik opslaan</button></div>
+          </form>
+        </section>
         <section class="panel notes-panel" aria-labelledby="notes-title">
           <div class="panel-heading history-heading"><div><span class="eyebrow">VOERTUIG</span><h3 id="notes-title">Notities</h3><p>Handige informatie en aandachtspunten voor dit voertuig.</p></div><button class="button button-outline" id="add-note">＋ Notitie toevoegen</button></div>
           <div id="notes-grid" class="notes-grid"></div>

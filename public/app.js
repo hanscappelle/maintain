@@ -164,6 +164,8 @@ async function loadSelected() {
   $('#vehicle-status').textContent = vehicle.archived ? 'GEARCHIVEERD VOERTUIG' : 'GESELECTEERD VOERTUIG';
   $('#archive-vehicle').textContent = vehicle.archived ? 'Terugzetten' : 'Archiveren';
   $('#vehicle-meta').textContent = [vehicle.type, [vehicle.make, vehicle.model].filter(Boolean).join(' '), vehicle.license_plate].filter(Boolean).join('  ·  ');
+  fillForm($('#vehicle-consumption-form'), vehicle);
+  updateVehicleEnergyLabels();
   $('#vehicle-mileage-card').replaceChildren(createMileageCard(vehicle, entries, today()));
   $('#stat-odometer').textContent = entries.length ? `${formatNumber(entries[0].odometer)} km` : '—';
   $('#stat-count').textContent = formatNumber(entries.length);
@@ -240,6 +242,34 @@ function vehicleCostPerKilometer(entries, day, distance) {
     perKilometer: knownCosts.length && distance !== null && distance > 0 ? total / distance : null
   };
 }
+function vehicleEnergyCostPerKilometer(vehicle) {
+  if (typeof garageInsights.energyCostPerKilometer === 'function') {
+    return garageInsights.energyCostPerKilometer(vehicle);
+  }
+  if (vehicle.consumption_per_100 === null || vehicle.energy_price === null) {
+    return { per100Km: null, perKilometer: null };
+  }
+  const per100Km = Number(vehicle.consumption_per_100) * Number(vehicle.energy_price);
+  return { per100Km, perKilometer: per100Km / 100 };
+}
+function updateVehicleEnergyLabels() {
+  const electric = $('#vehicle-energy-type').value === 'electric';
+  $('#vehicle-consumption-unit').textContent = electric ? 'kWh/100 km' : 'L/100 km';
+  $('#vehicle-energy-price-label').textContent = electric ? 'Elektriciteitsprijs (€/kWh)' : 'Brandstofprijs (€/L)';
+  updateVehicleEnergyPreview();
+}
+function updateVehicleEnergyPreview() {
+  const form = $('#vehicle-consumption-form');
+  const consumption = Number(form.elements.namedItem('consumption_per_100').value);
+  const price = Number(form.elements.namedItem('energy_price').value);
+  const preview = $('#vehicle-energy-preview');
+  if (!form.elements.namedItem('consumption_per_100').value || !form.elements.namedItem('energy_price').value) {
+    preview.textContent = 'Vul beide waarden in om de energiekost per 100 km te berekenen.';
+    return;
+  }
+  const per100Km = consumption * price;
+  preview.textContent = `Berekende energiekost: ${formatCurrency(per100Km)} per 100 km (${formatCurrency(per100Km / 100)} per km).`;
+}
 function createMileageCard(vehicle, entries, day, inOverview = false) {
   const row = element('article', 'overview-mileage-card'), info = element('div', 'overview-mileage-info');
   const sparkline = createMileageSparkline(entries, day);
@@ -256,17 +286,25 @@ function createMileageCard(vehicle, entries, day, inOverview = false) {
   }
   info.append(description);
   const costs = garageInsights.annualCost(entries, day);
-  const costPerKilometer = vehicleCostPerKilometer(entries, day, stats.distance);
+  const maintenancePerKilometer = vehicleCostPerKilometer(entries, day, stats.distance).perKilometer;
+  const energyPerKilometer = vehicleEnergyCostPerKilometer(vehicle).perKilometer;
+  const totalPerKilometer = maintenancePerKilometer === null && energyPerKilometer === null
+    ? null
+    : (maintenancePerKilometer ?? 0) + (energyPerKilometer ?? 0);
   const costDescription = element('p', '', 'Gemiddelde kost: ');
   if (costs.perYear === null) {
-    costDescription.append('geen kosten geregistreerd.');
+    costDescription.append('geen onderhoudskosten geregistreerd.');
   } else {
-    costDescription.append(element('strong', '', `${formatCurrency(costs.perYear)} per kalenderjaar`));
-    if (costPerKilometer.perKilometer === null) {
-      costDescription.append('; kost per kilometer niet beschikbaar.');
-    } else {
-      costDescription.append(' en ', element('strong', '', `${formatCurrency(costPerKilometer.perKilometer)} per km`), '.');
-    }
+    costDescription.append(element('strong', '', `${formatCurrency(costs.perYear)} per kalenderjaar`), '.');
+  }
+  if (totalPerKilometer !== null) {
+    costDescription.append(' Totale kost inclusief verbruik: ', element('strong', '', `${formatCurrency(totalPerKilometer)} per km`), ' (');
+    const components = [];
+    if (maintenancePerKilometer !== null) components.push(`onderhoud ${formatCurrency(maintenancePerKilometer)}`);
+    if (energyPerKilometer !== null) components.push(`energie ${formatCurrency(energyPerKilometer)}`);
+    costDescription.append(`${components.join(' + ')}).`);
+  } else if (costs.perYear !== null) {
+    costDescription.append(' Kost per kilometer niet beschikbaar.');
   }
   info.append(costDescription);
   row.append(info);
@@ -518,10 +556,10 @@ async function submitForm(form, save, dialog, afterSave) {
   try {
     clearError();
     const result = save(Object.fromEntries(new FormData(form)));
-    dialog.close();
+    if (dialog) dialog.close();
     await afterSave(result);
   } catch (error) {
-    if (dialog.open) formError.textContent = error.message;
+    if (!dialog || dialog.open) formError.textContent = error.message;
     else showError(error.message);
   } finally { button.disabled = false; }
 }
@@ -538,14 +576,28 @@ for (const button of document.querySelectorAll('.close-dialog, .cancel-dialog'))
 $('#vehicle-form').addEventListener('submit', event => {
   event.preventDefault();
   const id = state.editingVehicle;
+  const existingVehicle = state.vehicles.find(vehicle => vehicle.id === id);
   const startsProject = id === null && state.vehicles.length === 0;
-  submitForm(event.currentTarget, data => store.saveVehicle(id, data), $('#vehicle-dialog'), async vehicle => {
+  submitForm(event.currentTarget, data => store.saveVehicle(id, { ...existingVehicle, ...data }), $('#vehicle-dialog'), async vehicle => {
     if (startsProject) setDataWarningDismissed(false);
     state.showingOverview = false;
     await refreshVehicles(vehicle.id);
     rememberView();
   });
 });
+$('#vehicle-consumption-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const id = state.selectedId;
+  const vehicle = state.vehicles.find(item => item.id === id);
+  if (!vehicle) {
+    showError('Selecteer eerst een voertuig.');
+    return;
+  }
+  submitForm(event.currentTarget, data => store.saveVehicle(id, { ...vehicle, ...data }), null, async () => refreshVehicles(id));
+});
+$('#vehicle-energy-type').addEventListener('change', updateVehicleEnergyLabels);
+$('#vehicle-consumption-form [name=consumption_per_100]').addEventListener('input', updateVehicleEnergyPreview);
+$('#vehicle-consumption-form [name=energy_price]').addEventListener('input', updateVehicleEnergyPreview);
 $('#maintenance-form').addEventListener('submit', event => {
   event.preventDefault();
   const vehicleId = state.selectedId, id = state.editingEntry;

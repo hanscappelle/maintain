@@ -24,6 +24,8 @@ Met de menuknop naast het logo kun je de zijbalk inklappen en weer openen. In de
 
 De grafiek gebruikt de exacte datum en kilometerstand van elke registratie en toont op de kilometeras ronde stappen van minimaal 100 km; de tabel is gesorteerd op datum, nieuwste eerst. Bij meerdere registraties op dezelfde datum geldt de laatst aangemaakte registratie als de meest recente. Kilometerstanden hoeven niet op te lopen, zodat bijvoorbeeld een tellervervanging ook kan worden vastgelegd. De kosten zijn optioneel en worden in euro getoond.
 
+In het vak **Gemiddeld verbruik en energiekost** kun je per voertuig het gemiddelde verbruik en de brandstofprijs per liter of elektriciteitsprijs per kWh invullen. De energiekost per 100 km wordt berekend uit deze waarden. Die wordt samen met de onderhoudskosten meegerekend in de totale kost per kilometer.
+
 Bij het verwijderen van een voertuig worden ook alle bijbehorende onderhoudshistoriek, voertuignotities en geplande werkzaamheden permanent verwijderd.
 
 ### Notities
@@ -69,7 +71,7 @@ De app bewaart wijzigingen automatisch in de lokale opslag van **de huidige brow
 - Om gegevens op een andere computer te gebruiken: download de nieuwste versie, kopieer het bestand en upload het daar. Wijzigingen op verschillende computers worden niet automatisch gesynchroniseerd.
 - De melding dat gegevens alleen in deze browser worden bewaard, kan worden gesloten. De sluitkeuze wordt lokaal onthouden en de melding verschijnt opnieuw wanneer je een voertuig toevoegt aan een lege garage of een back-upbestand opent.
 
-Nieuwe bestanden hebben versie `5` en bevatten `vehicles`, `maintenance`, `notes` en `reminders`, met verwijzingen via voertuig-ID's en de archiefstatus per voertuig. Bestaande bestanden en browsergegevens van versie `1` tot en met `4` blijven leesbaar en worden bij de volgende wijziging naar versie `5` omgezet; voertuigen uit oudere bestanden zijn standaard actief. Oudere versies van de app kunnen versie `5` niet lezen. Herlaad daarom ook eventuele andere open tabbladen na een update. Alleen bestanden in dit Garageboek-formaat worden ondersteund. Browseropslag kan door browserinstellingen of opslaglimieten geweigerd worden; de app meldt dat als opslaan of importeren mislukt.
+Nieuwe bestanden hebben versie `6` en bevatten `vehicles`, `maintenance`, `notes` en `reminders`. Voertuigen bevatten ook aandrijving, gemiddeld verbruik en energieprijs; oudere bestanden en browsergegevens van versie `1` tot en met `5` blijven leesbaar en krijgen hiervoor lege standaardwaarden. Voertuigen uit versies `1` tot en met `4` zijn standaard actief. Oudere versies van de app kunnen versie `6` niet lezen. Herlaad daarom ook eventuele andere open tabbladen na een update. Alleen bestanden in dit Garageboek-formaat worden ondersteund. Browseropslag kan door browserinstellingen of opslaglimieten geweigerd worden; de app meldt dat als opslaan of importeren mislukt.
 
 ## Tests
 
