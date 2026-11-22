@@ -7,3 +7,4 @@ android/.idea/
 android/.kotlin/
 android/build/
 android/app/build/
+android/app/release/
