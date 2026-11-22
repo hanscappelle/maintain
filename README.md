@@ -10,7 +10,9 @@ Een web-app met enkel lokale data om voertuigen en hun onderhoudshistoriek bij t
 
 ## Online versie & Data opslag
 
-De gepubliceerde website is beschikbaar op [betyre.alwaysdata.net/maintain](https://betyre.alwaysdata.net/maintain/). Let op want ook daar slaan wij geen gegvens op. Alle data is enkel in je browser cache beschikbaar. Je browser cache verwijderen betekent dat ook je data weg is. 
+De gepubliceerde website is beschikbaar op [betyre.alwaysdata.net/maintain](https://betyre.alwaysdata.net/maintain/). En is ook beschikbaar op Android via [https://play.google.com/store/apps/details?id=be.android.hcpl.toerke](deze playstore link).
+
+Let op want ook daar slaan wij geen gegvens op. Alle data is enkel in je browser cache beschikbaar. Je browser cache verwijderen betekent dat ook je data weg is. 
 
 Je kan de data wel exporteren en opnieuw inladen om zo zelf bij te houden. Doe dit regelmatig om altijd een kopie van de laatste versie te bewaren. Het voordeel van deze implementatie is dat we geen login nodig hebben en geen centrale data opslag. 
 
@@ -18,7 +20,7 @@ Je kan de data wel exporteren en opnieuw inladen om zo zelf bij te houden. Doe d
 
 ### Teksten en vertalingen
 
-De webinterface is beschikbaar in het Nederlands, Engels en Frans. Engels is de standaardtaal; je kunt de taalkeuze in de kop wijzigen. De teksten staan in [`public/translations/`](public/translations/), met korte Engelse sleutels die in alle talen gelijk zijn. De HTML gebruikt `data-i18n`-attributen voor statische tekst; JavaScript gebruikt de gedeelde helper in [`public/i18n.js`](public/i18n.js), bijvoorbeeld `appText('dashboard')`. Placeholders zoals `{summary}` worden via de helper ingevuld. Pas vertalingen aan in de locale-bestanden zonder de sleutels te wijzigen.
+De webinterface is beschikbaar in het Nederlands, Engels en Frans. Engels is de standaardtaal; je kunt de taalkeuze in de kop wijzigen. 
 
 ### Voertuigen aanmaken & beheren
 
@@ -76,6 +78,10 @@ De app bewaart wijzigingen automatisch in de lokale opslag van **de huidige brow
 - De melding dat gegevens alleen in deze browser worden bewaard, kan worden gesloten. De sluitkeuze wordt lokaal onthouden en de melding verschijnt opnieuw wanneer je een voertuig toevoegt aan een lege garage of een back-upbestand opent.
 
 Nieuwe bestanden hebben versie `6` en bevatten `vehicles`, `maintenance`, `notes` en `reminders`. Voertuigen bevatten ook aandrijving, gemiddeld verbruik en energieprijs; oudere bestanden en browsergegevens van versie `1` tot en met `5` blijven leesbaar en krijgen hiervoor lege standaardwaarden. Voertuigen uit versies `1` tot en met `4` zijn standaard actief. Oudere versies van de app kunnen versie `6` niet lezen. Herlaad daarom ook eventuele andere open tabbladen na een update. Alleen bestanden in dit Garageboek-formaat worden ondersteund. Browseropslag kan door browserinstellingen of opslaglimieten geweigerd worden; de app meldt dat als opslaan of importeren mislukt.
+
+## Vertalingen
+
+De teksten staan in [`public/translations/`](public/translations/), met korte Engelse sleutels die in alle talen gelijk zijn. De HTML gebruikt `data-i18n`-attributen voor statische tekst; JavaScript gebruikt de gedeelde helper in [`public/i18n.js`](public/i18n.js), bijvoorbeeld `appText('dashboard')`. Placeholders zoals `{summary}` worden via de helper ingevuld. Pas vertalingen aan in de locale-bestanden zonder de sleutels te wijzigen.
 
 ## Tests
 
