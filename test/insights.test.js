@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { vehicleStats, annualCost, costPerKilometer, energyCostPerKilometer, mileageSparkline, mileageAxis, reminderStatus, overviewReminders } = require('../public/insights');
+const { vehicleStats, mileageForecast, annualCost, costPerKilometer, energyCostPerKilometer, mileageSparkline, mileageAxis, reminderStatus, overviewReminders } = require('../public/insights');
 
 test('kilometerstatistiek gebruikt chronologie en negeert toekomstige registraties', () => {
   const entries = [
@@ -15,6 +15,49 @@ test('kilometerstatistiek gebruikt chronologie en negeert toekomstige registrati
   assert.equal(stats.latest.id, 2);
   assert.equal(vehicleStats(entries, '2025-01-01').latest, null);
   assert.equal(vehicleStats(entries.slice(1, 2), '2026-01-20').distance, null);
+});
+
+test('kilometervoorspelling schat de volgende mijlpaal op basis van het jaargemiddelde', () => {
+  const entries = [
+    { id: 1, performed_on: '2025-01-01', odometer: 1000 },
+    { id: 2, performed_on: '2026-01-01', odometer: 11000 },
+    { id: 3, performed_on: '2027-01-01', odometer: 90000 }
+  ];
+  assert.deepEqual(mileageForecast(entries, '2026-01-01', 10000), {
+    odometer: 20000,
+    date: '2026-11-26'
+  });
+  assert.deepEqual(mileageForecast(entries, '2026-01-01', 5000), {
+    odometer: 15000,
+    date: '2026-05-27'
+  });
+  assert.equal(mileageForecast(entries, '2027-01-01', 10000).odometer, 100000);
+  assert.equal(mileageForecast(entries.slice(0, 2), '2027-01-01', 5000).odometer, 25000);
+  assert.equal(mileageForecast([
+    { id: 1, performed_on: '2025-01-01', odometer: 0 },
+    { id: 2, performed_on: '2026-01-01', odometer: 10000 }
+  ], '2026-01-01', 5000).odometer, 15000);
+});
+
+test('kilometervoorspelling ontbreekt zonder betrouwbare positieve snelheid', () => {
+  const entries = [
+    { id: 1, performed_on: '2026-01-01', odometer: 1000 },
+    { id: 2, performed_on: '2026-01-01', odometer: 11000 }
+  ];
+  assert.equal(mileageForecast(entries.slice(0, 1), '2026-01-02', 10000), null);
+  assert.equal(mileageForecast(entries, '2026-01-02', 10000), null);
+  assert.equal(mileageForecast([
+    { id: 1, performed_on: '2026-01-01', odometer: 11000 },
+    { id: 2, performed_on: '2026-02-01', odometer: 1000 }
+  ], '2026-02-01', 10000), null);
+  assert.equal(mileageForecast([
+    { id: 1, performed_on: '2025-01-01', odometer: 1000 },
+    { id: 2, performed_on: '2026-01-01', odometer: 1000 }
+  ], '2026-01-01', 10000), null);
+  assert.equal(mileageForecast([
+    { id: 1, performed_on: '1000-01-01', odometer: 0 },
+    { id: 2, performed_on: '2026-01-01', odometer: 1 }
+  ], '2026-01-01', 10000), null);
 });
 
 test('gemiddelde kost gebruikt kalenderjaren met registraties tot en met vandaag', () => {

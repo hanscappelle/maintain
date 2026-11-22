@@ -5,7 +5,7 @@ const garageStorage = (() => {
   const SELECTION_KEY = 'garageboek.selectedVehicle';
   const VIEW_KEY = 'garageboek.lastView';
   const MAX_ID = 4294967295;
-  const empty = () => ({ version: 6, vehicles: [], maintenance: [], notes: [], reminders: [] });
+  const empty = () => ({ version: 7, vehicles: [], maintenance: [], notes: [], reminders: [] });
   const validId = id => Number.isInteger(id) && id > 0 && id <= MAX_ID;
 
   function exactKeys(value, keys) {
@@ -19,21 +19,24 @@ const garageStorage = (() => {
     const prior = data?.version === 3 && exactKeys(data, ['version', 'vehicles', 'maintenance', 'notes', 'reminders']);
     const v4 = data?.version === 4 && exactKeys(data, ['version', 'vehicles', 'maintenance', 'notes', 'reminders']);
     const v5 = data?.version === 5 && exactKeys(data, ['version', 'vehicles', 'maintenance', 'notes', 'reminders']);
-    const current = data?.version === 6 && exactKeys(data, ['version', 'vehicles', 'maintenance', 'notes', 'reminders']);
-    if ((!legacy && !previous && !prior && !v4 && !v5 && !current) || !Array.isArray(data.vehicles) || !Array.isArray(data.maintenance) ||
-        (!legacy && !Array.isArray(data.notes)) || ((current || v5 || v4 || prior) && !Array.isArray(data.reminders))) {
+    const v6 = data?.version === 6 && exactKeys(data, ['version', 'vehicles', 'maintenance', 'notes', 'reminders']);
+    const current = data?.version === 7 && exactKeys(data, ['version', 'vehicles', 'maintenance', 'notes', 'reminders']);
+    if ((!legacy && !previous && !prior && !v4 && !v5 && !v6 && !current) || !Array.isArray(data.vehicles) || !Array.isArray(data.maintenance) ||
+        (!legacy && !Array.isArray(data.notes)) || ((current || v6 || v5 || v4 || prior) && !Array.isArray(data.reminders))) {
       throw new Error(storageText('invalidUnsupported'));
     }
     const vehicleIds = new Set(), entryIds = new Set();
     const vehicles = data.vehicles.map(item => {
       const keys = ['id', 'name', 'type', 'make', 'model', 'license_plate'];
       const archivedKeys = [...keys, 'archived'];
-      const currentKeys = [...archivedKeys, 'energy_type', 'consumption_per_100', 'energy_price'];
-      if (!exactKeys(item, current ? currentKeys : v5 ? archivedKeys : keys) ||
-          ((current || v5) && typeof item.archived !== 'boolean') ||
+      const energyKeys = [...archivedKeys, 'energy_type', 'consumption_per_100', 'energy_price'];
+      const currentKeys = [...energyKeys, 'service_interval_km'];
+      if (!exactKeys(item, current ? currentKeys : v6 ? energyKeys : v5 ? archivedKeys : keys) ||
+          ((current || v6 || v5) && typeof item.archived !== 'boolean') ||
           !validId(item.id) || vehicleIds.has(item.id) ||
           !['name', 'type', 'make', 'model', 'license_plate'].every(key => typeof item[key] === 'string') ||
-          (current && (typeof item.energy_type !== 'string' ||
+          (current && typeof item.service_interval_km !== 'number') ||
+          ((current || v6) && (typeof item.energy_type !== 'string' ||
             (item.consumption_per_100 !== null && typeof item.consumption_per_100 !== 'string') ||
             (item.energy_price !== null && typeof item.energy_price !== 'string')))) {
         throw new Error(storageText('invalidDuplicate'));
@@ -42,7 +45,7 @@ const garageStorage = (() => {
       return {
         id: item.id,
         ...validator.vehicle(item),
-        archived: current || v5 ? item.archived : false
+        archived: current || v6 || v5 ? item.archived : false
       };
     });
     const maintenance = data.maintenance.map(item => {
@@ -56,7 +59,7 @@ const garageStorage = (() => {
     });
     const noteIds = new Set();
     const notes = (legacy ? [] : data.notes).map(item => {
-      const hasImportant = current || v5 || v4;
+      const hasImportant = current || v6 || v5 || v4;
       const keys = hasImportant ? ['id', 'vehicle_id', 'title', 'content', 'important'] : ['id', 'vehicle_id', 'title', 'content'];
       if (!exactKeys(item, keys) || (hasImportant && typeof item.important !== 'boolean') ||
           !validId(item.id) || noteIds.has(item.id) || !vehicleIds.has(item.vehicle_id)) {
@@ -66,7 +69,7 @@ const garageStorage = (() => {
       return { id: item.id, vehicle_id: item.vehicle_id, ...validator.note(item), important: hasImportant ? item.important : false };
     });
     const reminderIds = new Set();
-    const reminders = (current || v5 || v4 || prior ? data.reminders : []).map(item => {
+    const reminders = (current || v6 || v5 || v4 || prior ? data.reminders : []).map(item => {
       if (!exactKeys(item, ['id', 'vehicle_id', 'title', 'due_date', 'due_odometer']) ||
           !validId(item.id) || reminderIds.has(item.id) || !vehicleIds.has(item.vehicle_id) ||
           (item.due_date !== null && typeof item.due_date !== 'string') ||
@@ -76,7 +79,7 @@ const garageStorage = (() => {
       reminderIds.add(item.id);
       return { id: item.id, vehicle_id: item.vehicle_id, ...validator.reminder(item) };
     });
-    return { version: 6, vehicles, maintenance, notes, reminders };
+    return { version: 7, vehicles, maintenance, notes, reminders };
   }
 
   function parse(json) {
@@ -227,13 +230,16 @@ const garageStorage = (() => {
         return data.reminders.filter(item => item.vehicle_id === vehicleId).sort((a, b) => b.id - a.id);
       },
       saveVehicle(id, input) {
-        const data = read(), fields = validator.vehicle(input);
+        const data = read();
+        const existing = id === null ? null : findVehicle(data, id);
+        const fields = validator.vehicle(existing && input?.service_interval_km === undefined
+          ? { ...input, service_interval_km: existing.service_interval_km } : input);
         let vehicle;
         if (id === null) {
           vehicle = { id: nextId(data.vehicles), ...fields, archived: false };
           data.vehicles.push(vehicle);
         } else {
-          vehicle = findVehicle(data, id);
+          vehicle = existing;
           Object.assign(vehicle, fields);
         }
         write(data);

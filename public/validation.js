@@ -23,6 +23,12 @@ function vehicle(input) {
   }
   const consumption = decimal(input.consumption_per_100, validationText('averageConsumption3'), 4, 2, 0.01, 1000);
   const energyPrice = decimal(input.energy_price, validationText('energyPrice'), 6, 3, 0, 999999);
+  const rawInterval = input.service_interval_km === undefined ? 10000 : input.service_interval_km;
+  if ((typeof rawInterval !== 'number' && typeof rawInterval !== 'string') ||
+      !/^\d+$/.test(String(rawInterval)) ||
+      !Number.isSafeInteger(Number(rawInterval)) || Number(rawInterval) < 1 || Number(rawInterval) > 4294967295) {
+    throw new Error(validationText('invalidServiceInterval'));
+  }
   return {
     name: text(input.name, validationText('name'), 120, true),
     type: text(input.type, validationText('type'), 50, true),
@@ -31,7 +37,8 @@ function vehicle(input) {
     license_plate: text(input.license_plate ?? '', validationText('registrationNumber'), 30),
     energy_type: energyType,
     consumption_per_100: consumption,
-    energy_price: energyPrice
+    energy_price: energyPrice,
+    service_interval_km: Number(rawInterval)
   };
 }
 

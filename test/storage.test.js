@@ -76,13 +76,40 @@ test('verbruik en energieprijs worden per voertuig bewaard en gevalideerd', () =
   assert.equal(reloaded.energy_type, 'electric');
   assert.equal(reloaded.consumption_per_100, '18.4');
   assert.equal(reloaded.energy_price, '0.32');
-  assert.equal(JSON.parse(store.exportJson()).version, 6);
+  assert.equal(JSON.parse(store.exportJson()).version, 7);
   const partial = store.saveVehicle(v.id, { ...v, consumption_per_100: '', energy_price: '0.32' });
   assert.equal(partial.consumption_per_100, null);
   assert.equal(partial.energy_price, '0.32');
   assert.throws(() => store.saveVehicle(v.id, { ...v, energy_type: 'diesel' }), /brandstof of elektrisch/);
   assert.throws(() => store.saveVehicle(v.id, { ...v, consumption_per_100: '0' }), /gemiddeld verbruik/);
   assert.throws(() => store.saveVehicle(v.id, { ...v, energy_price: '1.1234' }), /energieprijs/);
+});
+
+test('onderhoudsinterval is per voertuig instelbaar, gevalideerd en blijft bewaard', () => {
+  const storage = memory(), store = createStore(storage);
+  const a = store.saveVehicle(null, { ...vehicle, service_interval_km: '5000' });
+  const b = store.saveVehicle(null, { ...vehicle, name: 'Auto', service_interval_km: '15000' });
+  assert.equal(createStore(storage).listVehicles().find(item => item.id === a.id).service_interval_km, 5000);
+  assert.equal(b.service_interval_km, 15000);
+  assert.equal(store.saveVehicle(a.id, { ...vehicle, name: 'Aangepast' }).service_interval_km, 5000);
+  assert.equal(store.saveVehicle(a.id, { ...a, service_interval_km: 7500 }).service_interval_km, 7500);
+  for (const invalid of ['', 0, -1, 1.5, '2e3', null, 4294967296]) {
+    assert.throws(() => store.saveVehicle(a.id, { ...a, service_interval_km: invalid }), /onderhoudsinterval/i);
+  }
+  const imported = createStore(memory());
+  imported.importJson(store.exportJson());
+  assert.equal(imported.listVehicles().find(item => item.id === a.id).service_interval_km, 7500);
+  assert.equal(imported.listVehicles().find(item => item.id === b.id).service_interval_km, 15000);
+});
+
+test('samenvoegen behoudt het bestaande onderhoudsinterval bij overeenkomende voertuigen', () => {
+  const current = createStore(memory()), incoming = createStore(memory());
+  current.saveVehicle(null, { ...vehicle, service_interval_km: 5000 });
+  incoming.saveVehicle(null, { ...vehicle, service_interval_km: 15000 });
+  incoming.saveVehicle(null, { ...vehicle, name: 'Auto', service_interval_km: 7500 });
+  current.mergeJson(incoming.exportJson());
+  assert.equal(current.listVehicles().find(item => item.name === 'Motor').service_interval_km, 5000);
+  assert.equal(current.listVehicles().find(item => item.name === 'Auto').service_interval_km, 7500);
 });
 
 test('samenvoegen vult ontbrekende voertuigverbruiksgegevens aan', () => {
@@ -194,13 +221,15 @@ test('ongeldige en onvolledige bestanden vervangen bestaande gegevens niet', () 
   const before = store.exportJson(), data = JSON.parse(before);
   const invalid = [
     '{',
-    JSON.stringify({ ...data, version: 7 }),
+    JSON.stringify({ ...data, version: 8 }),
     JSON.stringify({ ...data, unknown: true }),
     JSON.stringify({ ...data, vehicles: [data.vehicles[0], data.vehicles[0]] }),
     JSON.stringify({ ...data, maintenance: [{ ...data.maintenance[0], vehicle_id: 999 }] }),
     JSON.stringify({ ...data, maintenance: [{ ...data.maintenance[0], performed_on: '2023-02-29' }] }),
     JSON.stringify({ ...data, maintenance: [{ ...data.maintenance[0], description: null }] }),
-    JSON.stringify({ ...data, vehicles: [{ ...data.vehicles[0], energy_type: 'steam' }] })
+    JSON.stringify({ ...data, vehicles: [{ ...data.vehicles[0], energy_type: 'steam' }] }),
+    JSON.stringify({ ...data, vehicles: [{ ...data.vehicles[0], service_interval_km: 0 }] }),
+    JSON.stringify({ ...data, vehicles: [{ ...data.vehicles[0], service_interval_km: '5000' }] })
   ];
   for (const json of invalid) {
     assert.throws(() => store.importJson(json));
@@ -228,7 +257,7 @@ test('notities blijven per voertuig bewaard en worden meegestuurd in JSON', () =
   assert.deepEqual(store.read().notes.map(item => item.id), [other.id]);
 });
 
-test('versie 1 tot en met 5 worden zonder gegevensverlies gelezen als versie 6', () => {
+test('versie 1 tot en met 6 worden zonder gegevensverlies gelezen als versie 7', () => {
   const storage = memory();
   const old = { version: 1, vehicles: [{ id: 1, ...vehicle }], maintenance: [{ id: 1, vehicle_id: 1, ...entry }] };
   storage.setItem(KEY, JSON.stringify(old));
@@ -236,13 +265,14 @@ test('versie 1 tot en met 5 worden zonder gegevensverlies gelezen als versie 6',
   assert.equal(store.listMaintenance(1).length, 1);
   assert.deepEqual(store.listNotes(1), []);
   const exported = JSON.parse(store.exportJson());
-  assert.equal(exported.version, 6);
+  assert.equal(exported.version, 7);
   assert.equal(exported.vehicles[0].archived, false);
   assert.equal(exported.vehicles[0].energy_type, 'fuel');
   assert.equal(exported.vehicles[0].consumption_per_100, null);
+  assert.equal(exported.vehicles[0].service_interval_km, 10000);
   assert.equal(exported.vehicles[0].name, 'Motor');
   store.saveNote(1, null, { title: 'Test', content: 'Inhoud' });
-  assert.equal(JSON.parse(storage.getItem(KEY)).version, 6);
+  assert.equal(JSON.parse(storage.getItem(KEY)).version, 7);
   const imported = createStore(memory());
   imported.importJson(JSON.stringify(old));
   assert.deepEqual(imported.listNotes(1), []);
@@ -272,6 +302,17 @@ test('versie 1 tot en met 5 worden zonder gegevensverlies gelezen als versie 6',
   assert.equal(imported.listVehicles()[0].archived, true);
   assert.equal(imported.listVehicles()[0].energy_type, 'fuel');
   assert.equal(imported.listVehicles()[0].energy_price, null);
+
+  const oldV6 = {
+    ...oldV5,
+    version: 6,
+    vehicles: [{ ...oldV5.vehicles[0], energy_type: 'electric', consumption_per_100: '18', energy_price: '0.32' }]
+  };
+  imported.importJson(JSON.stringify(oldV6));
+  assert.equal(imported.listVehicles()[0].service_interval_km, 10000);
+  assert.equal(imported.listVehicles()[0].energy_type, 'electric');
+  assert.equal(imported.listVehicles()[0].consumption_per_100, '18');
+  assert.equal(imported.listVehicles()[0].archived, true);
 });
 
 test('archiveren en terugzetten bewaren alle gegevens en de archiefstatus in JSON', () => {

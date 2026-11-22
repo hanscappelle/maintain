@@ -16,6 +16,19 @@ const garageInsights = (() => {
     const distance = days > 0 && !decrease ? latest.odometer - first.odometer : null;
     return { latest, first: first || null, days, distance, perYear: distance === null ? null : distance / days * 365.25, decrease };
   }
+  function mileageForecast(entries, today, interval) {
+    const stats = vehicleStats(entries, today);
+    if (!stats.latest || stats.perYear === null || stats.perYear <= 0) return null;
+    const todayTime = Date.parse(`${today}T00:00:00Z`);
+    const latestTime = Date.parse(`${stats.latest.performed_on}T00:00:00Z`);
+    const elapsedDays = (todayTime - latestTime) / dayMs;
+    const currentOdometer = stats.latest.odometer + stats.distance * elapsedDays / stats.days;
+    const odometer = (Math.floor(currentOdometer / interval) + 1) * interval;
+    const daysFromLatest = Math.ceil((odometer - stats.latest.odometer) * stats.days / stats.distance);
+    const milestoneTime = latestTime + daysFromLatest * dayMs;
+    if (!Number.isFinite(milestoneTime) || milestoneTime > Date.parse('9999-12-31T00:00:00Z')) return null;
+    return { odometer, date: new Date(milestoneTime).toISOString().slice(0, 10) };
+  }
   function annualCost(entries, today) {
     const ordered = chronologicalEntries(entries, today);
     const years = new Set(ordered.map(entry => entry.performed_on.slice(0, 4)));
@@ -93,6 +106,6 @@ const garageInsights = (() => {
       attentionCount: result.filter(item => item.status === 'due' || item.status === 'upcoming').length
     };
   }
-  return { vehicleStats, annualCost, costPerKilometer, energyCostPerKilometer, mileageSparkline, mileageAxis, reminderStatus, overviewReminders };
+  return { vehicleStats, mileageForecast, annualCost, costPerKilometer, energyCostPerKilometer, mileageSparkline, mileageAxis, reminderStatus, overviewReminders };
 })();
 if (typeof module !== 'undefined') module.exports = garageInsights;

@@ -197,7 +197,7 @@ async function loadSelected() {
   $('#stat-count').textContent = formatNumber(entries.length);
   $('#stat-date').textContent = entries.length ? formatDate(entries[0].performed_on) : '—';
   renderHistory();
-  renderChart();
+  renderChart(vehicle);
   renderNotes();
   renderReminders();
   $('#dashboard').hidden = false;
@@ -522,7 +522,7 @@ function renderHistory() {
     body.append(row);
   }
 }
-function renderChart() {
+function renderChart(vehicle) {
   const container = $('#chart');
   container.replaceChildren();
   if (!state.entries.length) {
@@ -530,13 +530,20 @@ function renderChart() {
     return;
   }
   const points = [...state.entries].reverse();
+  const day = today();
+  const forecast = points.some(point => point.performed_on > day)
+    ? null
+    : garageInsights.mileageForecast(state.entries, day, vehicle.service_interval_km);
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
   svg.setAttribute('viewBox', '0 0 900 240');
   svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', appText('mileageChart', {
+  const chartDescription = appText('mileageChart', {
     count: points.length, firstDate: formatDate(points[0].performed_on), lastDate: formatDate(points.at(-1).performed_on)
-  }));
+  });
+  svg.setAttribute('aria-label', forecast
+    ? `${chartDescription} ${appText('mileageForecast', { odometer: formatNumber(forecast.odometer), date: formatDate(forecast.date) })}`
+    : chartDescription);
   const add = (tag, attrs, content) => {
     const node = document.createElementNS(ns, tag);
     for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
@@ -545,8 +552,11 @@ function renderChart() {
     return node;
   };
   const times = points.map(p => Date.parse(`${p.performed_on}T00:00:00Z`));
-  const minTime = times.reduce((a, b) => Math.min(a, b)), maxTime = times.reduce((a, b) => Math.max(a, b));
+  const minTime = times.reduce((a, b) => Math.min(a, b));
+  const forecastTime = forecast ? Date.parse(`${forecast.date}T00:00:00Z`) : null;
+  const maxTime = Math.max(times.reduce((a, b) => Math.max(a, b)), forecastTime ?? -Infinity);
   const values = points.map(p => Number(p.odometer));
+  if (forecast) values.push(forecast.odometer);
   const minValue = values.reduce((a, b) => Math.min(a, b)), maxValue = values.reduce((a, b) => Math.max(a, b));
   const { lower, upper, ticks } = garageInsights.mileageAxis(minValue, maxValue);
   const x = t => minTime === maxTime ? 470 : 75 + (t - minTime) / (maxTime - minTime) * 790;
@@ -573,8 +583,32 @@ function renderChart() {
     });
     circle.append(title);
   });
+  if (forecast) {
+    const latest = points.at(-1);
+    const latestTime = Date.parse(`${latest.performed_on}T00:00:00Z`);
+    const forecastX = x(forecastTime);
+    const forecastY = y(forecast.odometer);
+    add('polyline', {
+      points: `${x(latestTime)},${y(Number(latest.odometer))} ${forecastX},${forecastY}`,
+      fill: 'none',
+      stroke: '#b48b37',
+      'stroke-width': 2,
+      'stroke-dasharray': '6 5',
+      'stroke-linecap': 'round'
+    });
+    add('circle', {
+      cx: forecastX, cy: forecastY, r: 5, fill: '#fff', stroke: '#b48b37',
+      'stroke-width': 2, class: 'mileage-forecast-marker'
+    });
+    add('text', {
+      x: 865, y: Math.max(forecastY - 9, 14), 'text-anchor': 'end',
+      fill: '#9a762e', 'font-size': 11
+    }, appText('mileageForecast', {
+      odometer: formatNumber(forecast.odometer), date: formatDate(forecast.date)
+    }));
+  }
   add('text', { x: minTime === maxTime ? 470 : 75, y: 225, 'text-anchor': minTime === maxTime ? 'middle' : 'start', fill: '#9daaa1', 'font-size': 11 }, formatDate(points[0].performed_on));
-  if (minTime !== maxTime) add('text', { x: 865, y: 225, 'text-anchor': 'end', fill: '#9daaa1', 'font-size': 11 }, formatDate(points.at(-1).performed_on));
+  if (minTime !== maxTime) add('text', { x: 865, y: 225, 'text-anchor': 'end', fill: '#9daaa1', 'font-size': 11 }, formatDate(forecast ? forecast.date : points.at(-1).performed_on));
   container.append(svg);
 }
 function fillForm(form, data) {
