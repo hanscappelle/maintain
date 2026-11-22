@@ -54,6 +54,19 @@ Choose **Archive** on a vehicle page when you no longer want to actively track t
 
 Under **Scheduled work** on the vehicle page, set a date, mileage, or both. The dashboard shows scheduled work for active vehicles, with reached and approaching work at the top. Work approaches within 30 days or 1,000 km; the **Attention needed** counter counts only approaching and reached work. The first reached threshold counts. Mileage is the most recently recorded reading up to today, not a prediction of the current reading. Without a mileage registration, a mileage threshold cannot be assessed; this work is shown separately and is not counted as approaching. These are not automatic notifications or maintenance advice; open the app to view them. After **Completed**, the work disappears from the plan; if desired, create a separate maintenance registration and plan the next service.
 
+### Features available in some other vehicle apps
+
+Garageboek focuses on maintenance history and local data ownership. Compared with apps such as [Drivvo](https://www.drivvo.com/en/) and [Simply Auto](https://simplyauto.app/), it does not currently provide:
+
+- A log of individual fuel fill-ups or charging sessions, with automatic fuel-economy and cost trends. Garageboek instead lets you enter average consumption and energy price.
+- Automatic notifications for upcoming or overdue scheduled work. Scheduled work is shown in the app and must be checked manually.
+- Automatic synchronization between browsers or devices, or shared access for multiple people. Data can be moved between devices using backup files.
+- Attachments for receipts, invoices, or vehicle documents.
+- Customizable expense reports or CSV/PDF exports; the documented backup format is JSON.
+- Suggested, vehicle-specific maintenance schedules or reusable service templates.
+
+These are comparison points, not announced plans. Sync and notifications in particular would change the current local-first model and its privacy and data-storage trade-offs.
+
 ## Optional local installation
 
 If you do not want to use the online version, you can also check out this project and run it locally with Node.js. Everything related to storage remains the same.
