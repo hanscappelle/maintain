@@ -731,6 +731,10 @@ async function deleteReminder(reminder, completed) {
 function downloadBackup() {
   const json = store.exportJson();
   const filename = downloadFilename();
+  if (window.HouseholdAndroid?.saveBackup) {
+    window.HouseholdAndroid.saveBackup(filename, json);
+    return;
+  }
   const link = element('a');
   const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
   try {

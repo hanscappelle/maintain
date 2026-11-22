@@ -6,7 +6,7 @@ const storage = require('../public/storage');
 const garageI18n = require('../public/i18n').create('nl');
 const { downloadFilename } = require('../public/download');
 
-function setup() {
+function setup(householdAndroid = null) {
   const values = new Map(), elements = new Map(), downloads = [];
   let downloadError = null, choice = 'replace';
   const confirmations = [];
@@ -49,7 +49,7 @@ function setup() {
   const store = storage.createStore(localStorage);
   runInNewContext(readFileSync(require.resolve('../public/app.js'), 'utf8'), {
     document,
-    window: { localStorage, addEventListener() {} },
+    window: { localStorage, addEventListener() {}, HouseholdAndroid: householdAndroid },
     garageStorage: { ...storage, createStore: () => ({ ...store, listVehicles: () => [] }) },
     garageI18n,
     downloadFilename: () => downloadFilename(new Date(2026, 10, 21)),
@@ -147,6 +147,18 @@ test('de knop Backup maken downloadt nog steeds de huidige gegevens', async () =
   assert.equal(app.downloads.length, 1);
   assert.equal(app.downloads[0].filename, 'garageboek-2026-11-21_00-00-00.json');
   assert.equal(await app.downloads[0].blob.text(), app.store.exportJson());
+});
+
+test('de Android-app slaat een backup op via de native bestandskiezer', () => {
+  const backups = [];
+  const app = setup({ saveBackup: (filename, contents) => backups.push({ filename, contents }) });
+  populatedStore(app.store);
+  app.elements.get('#export-data').listeners.click();
+  assert.deepEqual(backups, [{
+    filename: 'garageboek-2026-11-21_00-00-00.json',
+    contents: app.store.exportJson()
+  }]);
+  assert.equal(app.downloads.length, 0);
 });
 
 test('een fout bij het starten van de backup voorkomt de import', async () => {
