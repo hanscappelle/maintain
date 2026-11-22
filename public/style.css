@@ -157,3 +157,9 @@ html[data-theme="dark"] .energy-preview{color:#c1d0c2}
   .history-panel td .actions{justify-content:flex-start}
   html[data-theme="dark"] .history-panel tbody tr{border-color:#344139}
 }
+@media (min-width:651px) and (max-height:500px) and (orientation:landscape){
+  .sidebar{position:static;height:auto;padding-top:12px;padding-bottom:12px}
+  .sidebar-content{flex:0 0 auto;overflow:visible}
+  .sidebar-content #vehicle-list,.sidebar-content #archive-list{overflow:visible}
+  .sidebar-bottom{display:none}
+}
