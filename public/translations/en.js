@@ -60,7 +60,7 @@
   "mostRecent": "most recent entry",
   "insights": "INSIGHTS",
   "mileageTime": "Mileage over time",
-  "odometerReadings": "Odometer readings over time. The dashed line estimates when the next service interval milestone will be reached.",
+  "odometerReadings": "Odometer readings over time. For active vehicles, a dashed line estimates when the next service interval milestone will be reached.",
   "odometerReading2": "Odometer reading",
   "chartOdometer": "Chart of odometer readings over time",
   "consumption": "CONSUMPTION",

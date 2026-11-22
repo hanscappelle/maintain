@@ -60,7 +60,7 @@
   "mostRecent": "meest recente registratie",
   "insights": "INZICHT",
   "mileageTime": "Kilometerverloop",
-  "odometerReadings": "De kilometerstand doorheen de tijd. De stippellijn schat wanneer de volgende onderhoudsintervalmijlpaal wordt bereikt.",
+  "odometerReadings": "De kilometerstand doorheen de tijd. Voor actieve voertuigen schat een stippellijn wanneer de volgende onderhoudsintervalmijlpaal wordt bereikt.",
   "odometerReading2": "Kilometerstand",
   "chartOdometer": "Grafiek van kilometerstanden doorheen de tijd",
   "consumption": "VERBRUIK",

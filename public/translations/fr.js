@@ -60,7 +60,7 @@
   "mostRecent": "entrée la plus récente",
   "insights": "ANALYSE",
   "mileageTime": "Évolution du kilométrage",
-  "odometerReadings": "Relevés du compteur au fil du temps. La ligne pointillée estime la date du prochain jalon d’intervalle d’entretien.",
+  "odometerReadings": "Relevés du compteur au fil du temps. Pour les véhicules actifs, une ligne pointillée estime la date du prochain jalon d’intervalle d’entretien.",
   "odometerReading2": "Relevé du compteur",
   "chartOdometer": "Graphique des relevés du compteur au fil du temps",
   "consumption": "CONSOMMATION",

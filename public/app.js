@@ -531,7 +531,7 @@ function renderChart(vehicle) {
   }
   const points = [...state.entries].reverse();
   const day = today();
-  const forecast = points.some(point => point.performed_on > day)
+  const forecast = vehicle.archived || points.some(point => point.performed_on > day)
     ? null
     : garageInsights.mileageForecast(state.entries, day, vehicle.service_interval_km);
   const ns = 'http://www.w3.org/2000/svg';
