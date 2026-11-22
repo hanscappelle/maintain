@@ -16,6 +16,10 @@ Je kan de data wel exporteren en opnieuw inladen om zo zelf bij te houden. Doe d
 
 ## Gebruik
 
+### Teksten en vertalingen
+
+De webinterface is beschikbaar in het Nederlands, Engels en Frans. Engels is de standaardtaal; je kunt de taalkeuze in de kop wijzigen. De teksten staan in [`public/translations/`](public/translations/), met korte Engelse sleutels die in alle talen gelijk zijn. De HTML gebruikt `data-i18n`-attributen voor statische tekst; JavaScript gebruikt de gedeelde helper in [`public/i18n.js`](public/i18n.js), bijvoorbeeld `appText('dashboard')`. Placeholders zoals `{summary}` worden via de helper ingevuld. Pas vertalingen aan in de locale-bestanden zonder de sleutels te wijzigen.
+
 ### Voertuigen aanmaken & beheren
 
 Maak eerst een voertuig aan. Kies het in de zijbalk en voeg onderhoud toe. De laatst gekozen weergave (het algemene dashboard of een voertuig) wordt in de browser onthouden en na vernieuwen hersteld. Bestaat het laatst geselecteerde voertuig niet meer, dan wordt het eerste beschikbare voertuig gekozen. De weergave en voertuigselectie maken geen deel uit van de JSON-back-up. 

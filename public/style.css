@@ -12,7 +12,7 @@ td .actions{gap:2px}td button.table-action{display:grid;place-items:center;width
 .overview-note-vehicle{font-size:11px;font-weight:700;color:#7a6940;overflow-wrap:anywhere;margin-top:auto}.note-card .overview-vehicle-button{align-self:flex-start}
 .text-link{color:#315f45;text-decoration:underline;overflow-wrap:anywhere}.text-link:focus-visible{outline:2px solid #527d5b;outline-offset:2px}
 .overview-mileage-info p strong{font:inherit;font-weight:700;color:inherit}
-.overview-mileage-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:16px;margin-top:22px;align-items:start}.overview-mileage-grid .overview-empty{grid-column:1/-1}.overview-mileage-card{position:relative;isolation:isolate;overflow:clip;min-width:0;aspect-ratio:1;display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:16px;background:#e8f0e2;border:1px solid #d6e5d3;border-radius:3px;box-shadow:0 3px 7px #1d332a1a}.overview-mileage-info,.overview-mileage-card .overview-vehicle-button{position:relative;z-index:1}.overview-mileage-info strong{font:700 14px Manrope,sans-serif;color:#294a36;overflow-wrap:anywhere}.overview-mileage-info p{font-size:13px;line-height:1.55;color:#40534a;margin:8px 0 0;overflow-wrap:anywhere}.overview-mileage-card .overview-vehicle-button{margin-top:auto;color:#315f45;text-align:left}.overview-sparkline{position:absolute;inset:4px 0;width:100%;height:calc(100% - 8px);pointer-events:none;z-index:0}.overview-sparkline polyline{fill:none;stroke:#628967;opacity:.24;vector-effect:non-scaling-stroke;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.overview-mileage-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));grid-auto-rows:1fr;gap:16px;margin-top:22px;align-items:stretch}.overview-mileage-grid .overview-empty{grid-column:1/-1}.overview-mileage-card{position:relative;isolation:isolate;overflow:clip;min-width:0;aspect-ratio:1;display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:16px;background:#e8f0e2;border:1px solid #d6e5d3;border-radius:3px;box-shadow:0 3px 7px #1d332a1a}.overview-mileage-info,.overview-mileage-card .overview-vehicle-button{position:relative;z-index:1}.overview-mileage-info strong{font:700 14px Manrope,sans-serif;color:#294a36;overflow-wrap:anywhere}.overview-mileage-info p{font-size:13px;line-height:1.55;color:#40534a;margin:8px 0 0;overflow-wrap:anywhere}.overview-mileage-card .overview-vehicle-button{margin-top:auto;color:#315f45;text-align:left}.overview-sparkline{position:absolute;inset:4px 0;width:100%;height:calc(100% - 8px);pointer-events:none;z-index:0}.overview-sparkline polyline{fill:none;stroke:#628967;opacity:.24;vector-effect:non-scaling-stroke;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 #archive-heading{margin-top:20px}.sidebar-content #archive-list{overflow-y:auto}.sidebar.collapsed #archive-list:not(:empty){border-top:1px solid #e0e6df;margin-top:8px;padding-top:8px}@media(max-width:650px){#archive-list{display:flex;gap:6px;overflow-x:auto}.sidebar-content #archive-list{overflow-y:hidden}.sidebar.collapsed #archive-list:not(:empty){margin-top:8px;padding-top:8px}}
 .overview-mileage-card{min-height:min-content}
 @media(max-width:650px){
@@ -47,6 +47,17 @@ html[data-theme="dark"]{color-scheme:dark;background:#151a17;color:#e3e9e3}
 .topbar-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-shrink:0;flex-wrap:wrap}
 .topbar-actions .button{height:42px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 14px}
 .topbar-actions .theme-toggle{width:42px;padding:0;font-size:17px}
+.language-select{display:inline-flex;overflow:hidden;border:1px solid #e0e6df;border-radius:8px;background:#fff}
+.language-select button{min-width:38px;height:40px;padding:0 7px;border:0;background:transparent;color:#40534a;font-size:12px;font-weight:700}
+.language-select button+button{border-left:1px solid #e0e6df}
+.language-select button:hover{background:#f4f7f2}
+.language-select button[aria-pressed="true"]{background:#2c503b;color:#fff}
+.language-select button:focus-visible{position:relative;outline:2px solid #79a77e;outline-offset:-3px}
+html[data-theme="dark"] .language-select{background:#242c27;border-color:#3a463e}
+html[data-theme="dark"] .language-select button{color:#d2ddd4}
+html[data-theme="dark"] .language-select button+button{border-color:#3a463e}
+html[data-theme="dark"] .language-select button:hover{background:#303b34}
+html[data-theme="dark"] .language-select button[aria-pressed="true"]{background:#527b59;color:#fff}
 .warning-dismiss{width:30px;height:30px;flex:0 0 30px;display:grid;place-items:center;padding:0;border:1px solid transparent;border-radius:7px;background:transparent;color:#755f35;font-size:22px;line-height:1}
 .warning-dismiss:hover{background:#f3e8c9}
 .warning-dismiss:focus-visible{outline:2px solid #527d5b;outline-offset:2px}
@@ -55,7 +66,7 @@ html[data-theme="dark"] .warning-dismiss:hover{background:#49402d}
 @media(max-width:850px){.topbar{align-items:flex-start}.topbar-actions{max-width:440px}}
 @media(max-width:650px){.topbar-actions{display:grid;grid-template-columns:repeat(2,40px);gap:6px}.topbar-actions .button{height:40px;padding:0 10px}#add-vehicle span,#export-data span:not([aria-hidden]),#import-data span:not([aria-hidden]){display:none}.topbar-actions .theme-toggle{width:40px}}
 .warning-dismiss{z-index:1}
-@media(max-width:650px){.topbar-actions{grid-template-columns:40px max-content;grid-template-areas:"add export" "theme import";max-width:180px}#add-vehicle{grid-area:add;width:40px}#export-data{grid-area:export}#import-data{grid-area:import}.topbar-actions .theme-toggle{grid-area:theme}#export-data span,#import-data span{display:inline}}
+@media(max-width:650px){.topbar-actions{grid-template-columns:40px max-content;grid-template-areas:"add export" "language import" "theme theme";max-width:180px}#add-vehicle{grid-area:add;width:40px}#export-data{grid-area:export}#import-data{grid-area:import}.topbar-actions .language-select{grid-area:language}.topbar-actions .theme-toggle{grid-area:theme}#export-data span,#import-data span{display:inline}}
 html[data-theme="dark"] body{background:#151a17;color:#e3e9e3}
 html[data-theme="dark"] .sidebar{background:#1c231f;border-color:#303a33}
 html[data-theme="dark"] .brand{color:#e1e9e2}
@@ -122,3 +133,27 @@ html[data-theme="dark"] .sidebar.collapsed #archive-list:not(:empty){border-colo
 @media(max-width:650px){.topbar{flex-direction:column;gap:12px}.topbar-actions{display:flex;width:100%;max-width:none;justify-content:flex-start;gap:6px}}
 .consumption-panel .panel-heading{margin-bottom:18px}.energy-preview{margin:12px 0 0;color:#40534a;font-size:13px;font-weight:700}
 html[data-theme="dark"] .energy-preview{color:#c1d0c2}
+.stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+.stat{min-width:0}
+.stat>span,.stat strong,.stat small{overflow-wrap:anywhere}
+.panel-heading>div{min-width:0}
+.panel-heading h3,.panel-heading p{overflow-wrap:anywhere}
+.overview-mileage-grid .overview-mileage-card{aspect-ratio:auto;min-height:240px;overflow:visible}
+.overview-mileage-grid .overview-mileage-info{width:100%;min-width:0;flex:1}
+.overview-mileage-grid .overview-mileage-info p{max-width:100%}
+.chart-badge>span[data-i18n]{width:auto;height:auto;background:none;border-radius:0;margin-right:0}
+@media(max-width:850px){.chart-panel .panel-heading{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}.chart-panel .chart-badge{justify-self:start;white-space:normal;max-width:100%}}
+@media(max-width:650px){.stats{grid-template-columns:1fr}}
+@media(max-width:650px){
+  .history-panel .table-wrap{overflow-x:visible}
+  .history-panel table{min-width:0}
+  .history-panel thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  .history-panel tbody{display:block}
+  .history-panel tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;border-bottom:1px solid #f0f2ef;padding:16px 0}
+  .history-panel tbody tr:last-child{border-bottom:0}
+  .history-panel td{min-width:0;padding:0;border:0;overflow-wrap:anywhere}
+  .history-panel td:nth-child(1),.history-panel td:nth-child(2),.history-panel td:nth-child(5){grid-column:1/-1}
+  .history-panel td[data-label]::before{content:attr(data-label);display:block;margin-bottom:5px;color:#a0ada4;font-size:9px;font-weight:700;letter-spacing:1px}
+  .history-panel td .actions{justify-content:flex-start}
+  html[data-theme="dark"] .history-panel tbody tr{border-color:#344139}
+}

@@ -1,4 +1,5 @@
 const garageStorage = (() => {
+  const storageText = typeof module !== 'undefined' ? require('./i18n').create('nl').t : garageI18n.t;
   const validator = typeof module !== 'undefined' ? require('./validation') : validation;
   const KEY = 'garageboek.data.v1';
   const SELECTION_KEY = 'garageboek.selectedVehicle';
@@ -21,7 +22,7 @@ const garageStorage = (() => {
     const current = data?.version === 6 && exactKeys(data, ['version', 'vehicles', 'maintenance', 'notes', 'reminders']);
     if ((!legacy && !previous && !prior && !v4 && !v5 && !current) || !Array.isArray(data.vehicles) || !Array.isArray(data.maintenance) ||
         (!legacy && !Array.isArray(data.notes)) || ((current || v5 || v4 || prior) && !Array.isArray(data.reminders))) {
-      throw new Error('Ongeldig of niet-ondersteund Garageboek-bestand.');
+      throw new Error(storageText('invalidUnsupported'));
     }
     const vehicleIds = new Set(), entryIds = new Set();
     const vehicles = data.vehicles.map(item => {
@@ -35,7 +36,7 @@ const garageStorage = (() => {
           (current && (typeof item.energy_type !== 'string' ||
             (item.consumption_per_100 !== null && typeof item.consumption_per_100 !== 'string') ||
             (item.energy_price !== null && typeof item.energy_price !== 'string')))) {
-        throw new Error('Ongeldig of dubbel voertuig in het bestand.');
+        throw new Error(storageText('invalidDuplicate'));
       }
       vehicleIds.add(item.id);
       return {
@@ -48,7 +49,7 @@ const garageStorage = (() => {
       if (!exactKeys(item, ['id', 'vehicle_id', 'performed_on', 'odometer', 'title', 'description', 'cost']) ||
           !validId(item.id) || entryIds.has(item.id) || !vehicleIds.has(item.vehicle_id) ||
           typeof item.description !== 'string' || (item.cost !== null && typeof item.cost !== 'string' && typeof item.cost !== 'number')) {
-        throw new Error('Ongeldige onderhoudsregistratie of onbekend voertuig in het bestand.');
+        throw new Error(storageText('invalidMaintenanceEntry'));
       }
       entryIds.add(item.id);
       return { id: item.id, vehicle_id: item.vehicle_id, ...validator.maintenance(item) };
@@ -59,7 +60,7 @@ const garageStorage = (() => {
       const keys = hasImportant ? ['id', 'vehicle_id', 'title', 'content', 'important'] : ['id', 'vehicle_id', 'title', 'content'];
       if (!exactKeys(item, keys) || (hasImportant && typeof item.important !== 'boolean') ||
           !validId(item.id) || noteIds.has(item.id) || !vehicleIds.has(item.vehicle_id)) {
-        throw new Error('Ongeldige of dubbele notitie of onbekend voertuig in het bestand.');
+        throw new Error(storageText('invalidDuplicateNote'));
       }
       noteIds.add(item.id);
       return { id: item.id, vehicle_id: item.vehicle_id, ...validator.note(item), important: hasImportant ? item.important : false };
@@ -70,7 +71,7 @@ const garageStorage = (() => {
           !validId(item.id) || reminderIds.has(item.id) || !vehicleIds.has(item.vehicle_id) ||
           (item.due_date !== null && typeof item.due_date !== 'string') ||
           (item.due_odometer !== null && typeof item.due_odometer !== 'number')) {
-        throw new Error('Ongeldige of dubbele geplande werkzaamheid of onbekend voertuig in het bestand.');
+        throw new Error(storageText('invalidScheduledEntry'));
       }
       reminderIds.add(item.id);
       return { id: item.id, vehicle_id: item.vehicle_id, ...validator.reminder(item) };
@@ -82,7 +83,7 @@ const garageStorage = (() => {
     let data;
     try { data = JSON.parse(json); } catch (error) {
       if (!(error instanceof SyntaxError)) throw error;
-      throw new Error('Het bestand bevat geen geldige JSON.');
+      throw new Error(storageText('fileContain'));
     }
     return validateData(data);
   }
@@ -108,7 +109,7 @@ const garageStorage = (() => {
       for (const addition of additions) {
         const item = transform(addition), value = key(item), matches = entries.get(value) ?? [];
         if (matches.length > 1 || (matches.length === 1 && matched.has(matches[0]))) {
-          throw new Error('Samenvoegen niet mogelijk: meerdere voertuigen of records hebben dezelfde herkenningsgegevens.');
+          throw new Error(storageText('cannotMerge'));
         }
         let target = matches[0];
         if (target) {
@@ -116,7 +117,7 @@ const garageStorage = (() => {
             if (item[field].length > target[field].length) target[field] = item[field];
           }
         } else {
-          if (next >= MAX_ID) throw new Error('Er zijn geen nieuwe identificatienummers beschikbaar.');
+          if (next >= MAX_ID) throw new Error(storageText('newIds'));
           target = { ...item, id: ++next };
           existing.push(target);
           entries.set(value, [target]);
@@ -158,27 +159,27 @@ const garageStorage = (() => {
     }
     function nextId(items) {
       const id = items.reduce((max, item) => Math.max(max, item.id), 0) + 1;
-      if (id > MAX_ID) throw new Error('Er zijn geen nieuwe identificatienummers beschikbaar.');
+      if (id > MAX_ID) throw new Error(storageText('newIds'));
       return id;
     }
     function findVehicle(data, id) {
       const vehicle = data.vehicles.find(item => item.id === id);
-      if (!vehicle) throw new Error('Voertuig niet gevonden.');
+      if (!vehicle) throw new Error(storageText('vehicleFound'));
       return vehicle;
     }
     function findEntry(data, vehicleId, id) {
       const entry = data.maintenance.find(item => item.vehicle_id === vehicleId && item.id === id);
-      if (!entry) throw new Error('Onderhoud niet gevonden.');
+      if (!entry) throw new Error(storageText('maintenanceEntry'));
       return entry;
     }
     function findNote(data, vehicleId, id) {
       const note = data.notes.find(item => item.vehicle_id === vehicleId && item.id === id);
-      if (!note) throw new Error('Notitie niet gevonden.');
+      if (!note) throw new Error(storageText('noteFound'));
       return note;
     }
     function findReminder(data, vehicleId, id) {
       const reminder = data.reminders.find(item => item.vehicle_id === vehicleId && item.id === id);
-      if (!reminder) throw new Error('Geplande werkzaamheid niet gevonden.');
+      if (!reminder) throw new Error(storageText('scheduledMaintenance'));
       return reminder;
     }
     return {
@@ -186,23 +187,23 @@ const garageStorage = (() => {
       getLastView() {
         const value = storage.getItem(VIEW_KEY);
         if (value === null) return 'vehicle';
-        if (value !== 'vehicle' && value !== 'overview') throw new Error('De opgeslagen weergave is ongeldig.');
+        if (value !== 'vehicle' && value !== 'overview') throw new Error(storageText('savedView'));
         return value;
       },
       setLastView(view) {
-        if (view !== 'vehicle' && view !== 'overview') throw new Error('Ongeldige weergave.');
+        if (view !== 'vehicle' && view !== 'overview') throw new Error(storageText('invalidView'));
         storage.setItem(VIEW_KEY, view);
       },
       getSelectedVehicleId() {
         const value = storage.getItem(SELECTION_KEY);
         if (value === null || value === 'null') return null;
         if (!/^[1-9]\d*$/.test(value) || !validId(Number(value))) {
-          throw new Error('De opgeslagen voertuigselectie is ongeldig.');
+          throw new Error(storageText('savedVehicle'));
         }
         return Number(value);
       },
       setSelectedVehicleId(id) {
-        if (id !== null && !validId(id)) throw new Error('Ongeldige voertuigselectie.');
+        if (id !== null && !validId(id)) throw new Error(storageText('invalidVehicleSelection'));
         storage.setItem(SELECTION_KEY, String(id));
       },
       importJson(json) { const data = parse(json); write(data); },
@@ -239,7 +240,7 @@ const garageStorage = (() => {
         return vehicle;
       },
       setVehicleArchived(id, archived) {
-        if (typeof archived !== 'boolean') throw new Error('Ongeldige archiefstatus.');
+        if (typeof archived !== 'boolean') throw new Error(storageText('invalidArchive'));
         const data = read();
         const vehicle = findVehicle(data, id);
         vehicle.archived = archived;
@@ -270,7 +271,7 @@ const garageStorage = (() => {
         return note;
       },
       setNoteImportant(vehicleId, id, important) {
-        if (typeof important !== 'boolean') throw new Error('Ongeldige belangrijkmarkering.');
+        if (typeof important !== 'boolean') throw new Error(storageText('invalidImportant'));
         const data = read();
         const note = findNote(data, vehicleId, id);
         note.important = important;

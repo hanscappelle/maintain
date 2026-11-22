@@ -5,7 +5,7 @@ function setTheme(theme) {
   const isDark = theme === 'dark';
   document.documentElement.dataset.theme = theme;
   themeToggle.setAttribute('aria-pressed', String(isDark));
-  const label = isDark ? 'Lichte modus inschakelen' : 'Donkere modus inschakelen';
+  const label = garageI18n.t(isDark ? 'enableLight' : 'enableDark');
   themeToggle.setAttribute('aria-label', label);
   themeToggle.title = label;
   themeIcon.textContent = isDark ? '☀' : '☾';

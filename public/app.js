@@ -1,3 +1,4 @@
+const appText = garageI18n.t;
 const state = { vehicles: [], selectedId: null, entries: [], notes: [], reminders: [], editingVehicle: null, editingEntry: null, editingNote: null, editingReminder: null, showingOverview: false, loadToken: 0 };
 let vehicleConsumptionSaveTimer = null;
 const store = garageStorage.createStore({
@@ -6,9 +7,15 @@ const store = garageStorage.createStore({
 });
 const DATA_WARNING_DISMISSED_KEY = 'garageboek-data-warning-dismissed';
 const $ = selector => document.querySelector(selector);
-const formatNumber = value => new Intl.NumberFormat('nl-BE').format(value);
-const formatCurrency = value => new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(value);
-const formatDate = value => new Intl.DateTimeFormat('nl-BE', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`));
+const formatLocale = { en: 'en-GB', fr: 'fr-BE', nl: 'nl-BE' }[garageI18n.locale];
+const formatNumber = value => new Intl.NumberFormat(formatLocale).format(value);
+const formatCurrency = value => new Intl.NumberFormat(formatLocale, { style: 'currency', currency: 'EUR' }).format(value);
+const formatDate = value => new Intl.DateTimeFormat(formatLocale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`));
+const vehicleTypeLabel = type => ({
+  Motorfiets: appText('motorcycle'),
+  Auto: appText('car'),
+  'Ander rollend materiaal': appText('vehicle2')
+})[type] ?? type;
 const today = () => {
   const date = new Date();
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -20,6 +27,18 @@ function showError(message) {
   notice.hidden = false;
 }
 function clearError() { $('#notice').hidden = true; }
+for (const button of document.querySelectorAll('.language-select [data-locale]')) {
+  button.setAttribute('aria-pressed', String(button.dataset.locale === garageI18n.locale));
+  button.addEventListener('click', () => {
+    if (button.dataset.locale === garageI18n.locale) return;
+    try {
+      window.localStorage.setItem('garageboek-language', button.dataset.locale);
+      window.location.reload();
+    } catch (error) {
+      showError(appText('saveLanguage', { error: error.message }));
+    }
+  });
+}
 function setDataWarningDismissed(dismissed) {
   const warning = $('#data-warning');
   if (!dismissed && !warning.hidden) return;
@@ -28,22 +47,22 @@ function setDataWarningDismissed(dismissed) {
     if (dismissed) window.localStorage.setItem(DATA_WARNING_DISMISSED_KEY, 'true');
     else window.localStorage.removeItem(DATA_WARNING_DISMISSED_KEY);
   } catch (error) {
-    showError(`Melding kon niet worden opgeslagen: ${error.message}`);
+    showError(appText('saveMessage', { error: error.message }));
   }
 }
 try {
   $('#data-warning').hidden = window.localStorage.getItem(DATA_WARNING_DISMISSED_KEY) === 'true';
 } catch (error) {
-  showError(`Meldingvoorkeur kon niet worden gelezen: ${error.message}`);
+  showError(appText('readMessage', { error: error.message }));
 }
 function rememberSelection() {
   try { store.setSelectedVehicleId(state.selectedId); } catch (error) {
-    showError(`Voertuigselectie kon niet worden onthouden: ${error.message}`);
+    showError(appText('rememberVehicle', { error: error.message }));
   }
 }
 function rememberView() {
   try { store.setLastView(state.showingOverview ? 'overview' : 'vehicle'); } catch (error) {
-    showError(`Weergave kon niet worden onthouden: ${error.message}`);
+    showError(appText('rememberView', { error: error.message }));
   }
 }
 $('#sidebar-toggle').addEventListener('click', event => {
@@ -54,7 +73,7 @@ $('#sidebar-toggle').addEventListener('click', event => {
   $('#sidebar-bottom').hidden = expanded;
   document.querySelector('.sidebar').classList.toggle('collapsed', expanded);
   button.setAttribute('aria-expanded', String(!expanded));
-  const label = expanded ? 'Zijmenu uitklappen' : 'Zijmenu inklappen';
+  const label = appText(expanded ? 'expandSidebar' : 'collapseSidebar');
   button.setAttribute('aria-label', label);
   button.title = label;
 });
@@ -74,7 +93,7 @@ function linkedText(tag, className, text) {
       link.href = part.url;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
-      link.setAttribute('aria-label', `${part.text} (opent in een nieuw tabblad of venster)`);
+      link.setAttribute('aria-label', appText('opensNewTab', { title: part.text }));
       node.append(link);
     }
   }
@@ -119,16 +138,21 @@ function renderVehicles() {
   for (const vehicle of state.vehicles) {
     const button = element('button', `vehicle-link${!state.showingOverview && vehicle.id === state.selectedId ? ' active' : ''}`);
     button.type = 'button';
-    button.setAttribute('aria-label', `${vehicle.name} (${vehicle.type}${vehicle.archived ? ', gearchiveerd' : ''})`);
-    button.title = `${vehicle.name} (${vehicle.type}${vehicle.archived ? ', gearchiveerd' : ''})`;
+    const vehicleLabel = appText('message2', {
+      name: vehicle.name, type: vehicleTypeLabel(vehicle.type), archived: vehicle.archived ? appText('archived2') : ''
+    });
+    button.setAttribute('aria-label', vehicleLabel);
+    button.title = vehicleLabel;
     if (!state.showingOverview && vehicle.id === state.selectedId) button.setAttribute('aria-current', 'true');
     const icon = element('span', 'vehicle-link-icon');
     icon.setAttribute('aria-hidden', 'true');
     const words = vehicle.name.trim().split(/\s+/);
     const initials = words.length > 1 ? Array.from(words[0])[0] + Array.from(words[1])[0] : Array.from(words[0]).slice(0, 2).join('');
-    icon.append(element('span', 'vehicle-type-icon', vehicle.type === 'Motorfiets' ? '◈' : '▰'), element('span', 'vehicle-initials', initials.toLocaleUpperCase('nl')));
+    icon.append(element('span', 'vehicle-type-icon', vehicle.type === appText('motorcycle') ? '◈' : '▰'), element('span', 'vehicle-initials', initials.toLocaleUpperCase('nl')));
     const details = element('span', 'vehicle-details');
-    details.append(element('strong', '', vehicle.name), element('small', '', vehicle.archived ? `${vehicle.type} · Gearchiveerd` : vehicle.type));
+    details.append(element('strong', '', vehicle.name), element('small', '', vehicle.archived
+      ? appText('archived3', { type: vehicleTypeLabel(vehicle.type) })
+      : vehicleTypeLabel(vehicle.type)));
     button.append(icon, details);
     button.addEventListener('click', async () => {
       const hadFocus = document.activeElement === button;
@@ -150,8 +174,8 @@ async function loadSelected() {
   }
   $('#empty-garage').hidden = Boolean(vehicle);
   $('#empty-garage-message').textContent = state.vehicles.length
-    ? 'Er zijn geen actieve voertuigen. Voeg een voertuig toe of open een voertuig in het archief.'
-    : 'Voeg je eerste voertuig toe om de onderhoudshistoriek bij te houden.';
+    ? appText('activeVehiclesAdd')
+    : appText('addVehicleKeep');
   $('#dashboard').hidden = true;
   if (!vehicle) return;
   const entries = store.listMaintenance(vehicle.id);
@@ -162,9 +186,9 @@ async function loadSelected() {
   state.notes = notes;
   state.reminders = reminders;
   $('#vehicle-name').textContent = vehicle.name;
-  $('#vehicle-status').textContent = vehicle.archived ? 'GEARCHIVEERD VOERTUIG' : 'GESELECTEERD VOERTUIG';
-  $('#archive-vehicle').textContent = vehicle.archived ? 'Terugzetten' : 'Archiveren';
-  $('#vehicle-meta').textContent = [vehicle.type, [vehicle.make, vehicle.model].filter(Boolean).join(' '), vehicle.license_plate].filter(Boolean).join('  ·  ');
+  $('#vehicle-status').textContent = appText(vehicle.archived ? 'archivedVehicle' : 'selectedVehicle');
+  $('#archive-vehicle').textContent = appText(vehicle.archived ? 'restore' : 'archive2');
+  $('#vehicle-meta').textContent = [vehicleTypeLabel(vehicle.type), [vehicle.make, vehicle.model].filter(Boolean).join(' '), vehicle.license_plate].filter(Boolean).join('  ·  ');
   fillForm($('#vehicle-consumption-form'), vehicle);
   $('#vehicle-consumption-error').textContent = '';
   updateVehicleEnergyLabels();
@@ -181,21 +205,28 @@ async function loadSelected() {
 function reminderDetails(reminder, latest, day) {
   const result = garageInsights.reminderStatus(reminder, latest, day);
   const parts = [];
-  if (reminder.due_date !== null) parts.push(`Datum: ${formatDate(reminder.due_date)}`);
+  if (reminder.due_date !== null) parts.push(appText('date4', { date: formatDate(reminder.due_date) }));
   if (reminder.due_odometer !== null) {
-    parts.push(`Grens: ${formatNumber(reminder.due_odometer)} km`);
-    parts.push(latest ? `Laatste stand: ${formatNumber(latest.odometer)} km (${formatDate(latest.performed_on)})` : 'Geen kilometerstand beschikbaar');
+    parts.push(appText('limitKm', { odometer: formatNumber(reminder.due_odometer) }));
+    parts.push(latest
+      ? appText('readingKm2', { odometer: formatNumber(latest.odometer), date: formatDate(latest.performed_on) })
+      : appText('odometerReadingAvailable'));
   }
   return { ...result, text: parts.join(' · ') };
 }
 function statusBadge(status) {
-  return element('span', `status-label ${status}`, { due: 'Bereikt', upcoming: 'Nadert', planned: 'Gepland', unknown: 'Kilometerstand ontbreekt' }[status]);
+  return element('span', `status-label ${status}`, {
+    due: appText('due'),
+    upcoming: appText('upcoming'),
+    planned: appText('scheduled'),
+    unknown: appText('odometerReadingMissing')
+  }[status]);
 }
 function renderReminders() {
   const list = $('#reminders-list');
   list.replaceChildren();
   if (!state.reminders.length) {
-    list.append(element('p', 'overview-empty', 'Nog geen werkzaamheden gepland.'));
+    list.append(element('p', 'overview-empty', appText('maintenanceScheduled')));
     return;
   }
   const latest = garageInsights.vehicleStats(state.entries, today()).latest;
@@ -205,13 +236,13 @@ function renderReminders() {
     info.append(element('strong', '', reminder.title), statusBadge(details.status), element('p', '', details.text));
     const buttons = element('div', 'row-actions');
     for (const [label, handler, className] of [
-      ['Bewerken', () => openReminder(reminder), ''],
-      ['Afgehandeld', () => deleteReminder(reminder, true), ''],
-      ['Verwijderen', () => deleteReminder(reminder, false), 'danger']
+      [appText('edit'), () => openReminder(reminder), ''],
+      [appText('completed'), () => deleteReminder(reminder, true), ''],
+      [appText('delete'), () => deleteReminder(reminder, false), 'danger']
     ]) {
       const button = element('button', className, label);
       button.type = 'button';
-      button.setAttribute('aria-label', `${reminder.title} ${label.toLowerCase()}`);
+      button.setAttribute('aria-label', appText('message3', { title: reminder.title, action: label.toLowerCase() }));
       button.addEventListener('click', handler);
       buttons.append(button);
     }
@@ -257,7 +288,7 @@ function vehicleEnergyCostPerKilometer(vehicle) {
 function updateVehicleEnergyLabels() {
   const electric = $('#vehicle-energy-type').value === 'electric';
   $('#vehicle-consumption-unit').textContent = electric ? 'kWh/100 km' : 'L/100 km';
-  $('#vehicle-energy-price-label').textContent = electric ? 'Elektriciteitsprijs (€/kWh)' : 'Brandstofprijs (€/L)';
+  $('#vehicle-energy-price-label').textContent = appText(electric ? 'electricityPrice' : 'fuelPrice');
   updateVehicleEnergyPreview();
 }
 function updateVehicleEnergyPreview() {
@@ -266,18 +297,20 @@ function updateVehicleEnergyPreview() {
   const price = Number(form.elements.namedItem('energy_price').value);
   const preview = $('#vehicle-energy-preview');
   if (!form.elements.namedItem('consumption_per_100').value || !form.elements.namedItem('energy_price').value) {
-    preview.textContent = 'Vul beide waarden in om de energiekost per 100 km te berekenen.';
+    preview.textContent = appText('enterValues');
     return;
   }
   const per100Km = consumption * price;
-  preview.textContent = `Berekende energiekost: ${formatCurrency(per100Km)} per 100 km (${formatCurrency(per100Km / 100)} per km).`;
+  preview.textContent = appText('calculatedEnergy', {
+    per100: formatCurrency(per100Km), perKm: formatCurrency(per100Km / 100)
+  });
 }
 function saveVehicleConsumption(vehicleId, data) {
   const formError = $('#vehicle-consumption-error');
   try {
     clearError();
     const vehicle = state.vehicles.find(item => item.id === vehicleId);
-    if (!vehicle) throw new Error('Het voertuig voor deze wijziging is niet meer beschikbaar.');
+    if (!vehicle) throw new Error(appText('vehicleChange'));
     const savedVehicle = store.saveVehicle(vehicleId, { ...vehicle, ...data });
     state.vehicles = state.vehicles.map(item => item.id === vehicleId ? savedVehicle : item);
     formError.textContent = '';
@@ -304,13 +337,17 @@ function createMileageCard(vehicle, entries, day, inOverview = false) {
   if (sparkline) row.append(sparkline);
   const stats = garageInsights.vehicleStats(entries, day);
   if (inOverview) info.append(element('strong', '', vehicle.name));
-  let message = stats.latest ? `Laatste stand: ${formatNumber(stats.latest.odometer)} km op ${formatDate(stats.latest.performed_on)}.` : 'Nog geen kilometerstand tot en met vandaag.';
-  if (stats.decrease) message += ' Een daling in de tellerstand verhindert een betrouwbare afstandsberekening.';
-  else if (stats.distance !== null) message += ` ${formatNumber(stats.distance)} km tussen ${formatDate(stats.first.performed_on)} en ${formatDate(stats.latest.performed_on)}; gemiddeld `;
-  else if (stats.latest) message += ' Voeg standen op verschillende datums toe voor een gemiddelde.';
+  let message = stats.latest
+    ? appText('readingKm', { odometer: formatNumber(stats.latest.odometer), date: formatDate(stats.latest.performed_on) })
+    : appText('odometerReadingRecorded');
+  if (stats.decrease) message += ` ${appText('decreaseOdometer')}`;
+  else if (stats.distance !== null) message += ` ${appText('kmAverage', {
+    distance: formatNumber(stats.distance), firstDate: formatDate(stats.first.performed_on), lastDate: formatDate(stats.latest.performed_on)
+  })}`;
+  else if (stats.latest) message += ` ${appText('addReadings')}`;
   const description = element('p', '', message);
   if (!stats.decrease && stats.distance !== null) {
-    description.append(element('strong', '', `${formatNumber(Math.round(stats.perYear))} km per jaar`), '.');
+    description.append(element('strong', '', appText('kmPer', { distance: formatNumber(Math.round(stats.perYear)) })), '.');
   }
   info.append(description);
   const costs = garageInsights.annualCost(entries, day);
@@ -319,27 +356,27 @@ function createMileageCard(vehicle, entries, day, inOverview = false) {
   const totalPerKilometer = maintenancePerKilometer === null && energyPerKilometer === null
     ? null
     : (maintenancePerKilometer ?? 0) + (energyPerKilometer ?? 0);
-  const costDescription = element('p', '', 'Gemiddelde kost: ');
+  const costDescription = element('p', '', appText('averageCost'));
   if (costs.perYear === null) {
-    costDescription.append('geen onderhoudskosten geregistreerd.');
+    costDescription.append(appText('maintenanceCosts'));
   } else {
-    costDescription.append(element('strong', '', `${formatCurrency(costs.perYear)} per kalenderjaar`), '.');
+    costDescription.append(element('strong', '', appText('perCalendar', { cost: formatCurrency(costs.perYear) })), '.');
   }
   if (totalPerKilometer !== null) {
-    costDescription.append(' Totale kost inclusief verbruik: ', element('strong', '', `${formatCurrency(totalPerKilometer)} per km`), ' (');
+    costDescription.append(appText('totalCost'), element('strong', '', appText('perKm', { cost: formatCurrency(totalPerKilometer) })), ' (');
     const components = [];
-    if (maintenancePerKilometer !== null) components.push(`onderhoud ${formatCurrency(maintenancePerKilometer)}`);
-    if (energyPerKilometer !== null) components.push(`energie ${formatCurrency(energyPerKilometer)}`);
+    if (maintenancePerKilometer !== null) components.push(appText('maintenance2', { cost: formatCurrency(maintenancePerKilometer) }));
+    if (energyPerKilometer !== null) components.push(appText('energy', { cost: formatCurrency(energyPerKilometer) }));
     costDescription.append(`${components.join(' + ')}).`);
   } else if (costs.perYear !== null) {
-    costDescription.append(' Kost per kilometer niet beschikbaar.');
+    costDescription.append(appText('costPer'));
   }
   info.append(costDescription);
   row.append(info);
   if (inOverview) {
-    const button = element('button', 'overview-vehicle-button', 'Bekijk voertuig');
+    const button = element('button', 'overview-vehicle-button', appText('viewVehicle'));
     button.type = 'button';
-    button.setAttribute('aria-label', `${vehicle.name} bekijken`);
+    button.setAttribute('aria-label', appText('view', { name: vehicle.name }));
     button.addEventListener('click', () => selectVehicle(vehicle.id));
     row.append(button);
   }
@@ -364,14 +401,14 @@ function renderOverview() {
       importantNotes++;
       const card = element('article', 'note-card important');
       card.append(
-        element('span', 'note-important-label', '★ Belangrijk'),
+        element('span', 'note-important-label', appText('important2')),
         linkedText('h4', '', note.title),
         linkedText('p', '', note.content),
         element('span', 'overview-note-vehicle', vehicle.name)
       );
-      const noteButton = element('button', 'overview-vehicle-button', 'Bekijk voertuig');
+      const noteButton = element('button', 'overview-vehicle-button', appText('viewVehicle'));
       noteButton.type = 'button';
-      noteButton.setAttribute('aria-label', `${vehicle.name} bekijken voor notitie ${note.title}`);
+      noteButton.setAttribute('aria-label', appText('viewNote', { name: vehicle.name, title: note.title }));
       noteButton.addEventListener('click', () => selectVehicle(vehicle.id));
       card.append(noteButton);
       notesGrid.append(card);
@@ -382,16 +419,16 @@ function renderOverview() {
   for (const { vehicle, reminder, latest } of reminderOverview.items) {
     const details = reminderDetails(reminder, latest, day);
     const taskRow = element('div', 'overview-row'), taskInfo = element('div');
-    taskInfo.append(element('strong', '', `${vehicle.name} · ${reminder.title}`), statusBadge(details.status), element('p', '', details.text));
-    const taskButton = element('button', 'overview-vehicle-button', 'Bekijk voertuig');
+    taskInfo.append(element('strong', '', appText('message', { name: vehicle.name, title: reminder.title })), statusBadge(details.status), element('p', '', details.text));
+    const taskButton = element('button', 'overview-vehicle-button', appText('viewVehicle'));
     taskButton.type = 'button';
-    taskButton.setAttribute('aria-label', `${vehicle.name} bekijken voor ${reminder.title}`);
+    taskButton.setAttribute('aria-label', appText('view2', { name: vehicle.name, title: reminder.title }));
     taskButton.addEventListener('click', () => selectVehicle(vehicle.id));
     taskRow.append(taskInfo, taskButton);
     planning.append(taskRow);
   }
-  if (!activeVehicles.length) list.append(element('p', 'overview-empty', 'Geen actieve voertuigen. Voeg een voertuig toe of zet er een terug uit het archief.'));
-  if (!reminderOverview.items.length) planning.append(element('p', 'overview-empty', 'Geen werkzaamheden gepland. Plan werkzaamheden bij een voertuig.'));
+  if (!activeVehicles.length) list.append(element('p', 'overview-empty', appText('activeVehiclesAddVehicle')));
+  if (!reminderOverview.items.length) planning.append(element('p', 'overview-empty', appText('noScheduledWork')));
   $('#overview-due').textContent = formatNumber(reminderOverview.attentionCount);
 }
 async function selectVehicle(id) {
@@ -414,20 +451,20 @@ function renderNotes() {
     const header = element('div', 'note-card-header');
     const menu = element('details', 'note-menu');
     const toggle = element('summary', 'note-menu-toggle', '⋮');
-    toggle.setAttribute('aria-label', `Acties voor ${note.title}`);
-    toggle.title = 'Notitieacties';
+    toggle.setAttribute('aria-label', appText('actions2', { title: note.title }));
+    toggle.title = appText('noteActions');
     const controls = element('div', 'note-actions');
-    const mark = element('button', '', note.important ? 'Belangrijkmarkering verwijderen' : 'Markeren als belangrijk');
+    const mark = element('button', '', appText(note.important ? 'removeImportant' : 'markImportant'));
     mark.type = 'button';
-    mark.setAttribute('aria-label', `${note.title}: ${mark.textContent}`);
+    mark.setAttribute('aria-label', appText('message4', { title: note.title, action: mark.textContent }));
     mark.addEventListener('click', () => { menu.open = false; setNoteImportant(note); });
-    const edit = element('button', '', 'Bewerken');
+    const edit = element('button', '', appText('edit'));
     edit.type = 'button';
-    edit.setAttribute('aria-label', `${note.title} bewerken`);
+    edit.setAttribute('aria-label', appText('edit2', { title: note.title }));
     edit.addEventListener('click', () => { menu.open = false; openNote(note); });
-    const remove = element('button', 'danger', 'Verwijderen');
+    const remove = element('button', 'danger', appText('delete'));
     remove.type = 'button';
-    remove.setAttribute('aria-label', `${note.title} verwijderen`);
+    remove.setAttribute('aria-label', appText('delete2', { title: note.title }));
     remove.addEventListener('click', () => { menu.open = false; toggle.focus(); deleteNote(note); });
     toggle.addEventListener('click', () => {
       if (!menu.open) {
@@ -438,7 +475,7 @@ function renderNotes() {
     menu.append(toggle, controls);
     header.append(linkedText('h4', '', note.title), menu);
     card.append(header);
-    if (note.important) card.append(element('span', 'note-important-label', '★ Belangrijk'));
+    if (note.important) card.append(element('span', 'note-important-label', appText('important2')));
     card.append(linkedText('p', '', note.content));
     grid.append(card);
   }
@@ -463,6 +500,7 @@ function renderHistory() {
   $('#history-empty').hidden = state.entries.length > 0;
   for (const entry of state.entries) {
     const row = element('tr');
+    row.setAttribute('role', 'row');
     const date = element('td', '', formatDate(entry.performed_on));
     const work = element('td');
     work.append(linkedText('strong', '', entry.title));
@@ -472,10 +510,14 @@ function renderHistory() {
     const actions = element('td');
     const wrapper = element('div', 'actions');
     wrapper.append(
-      action(`${entry.title} bewerken`, 'table-action', 'M12 20h9 M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z', () => openMaintenance(entry)),
-      action(`${entry.title} verwijderen`, 'table-action danger', 'M4 7h16 M10 3h4 M6 7l1 13h10l1-13 M10 11v5 M14 11v5', () => deleteMaintenance(entry))
+      action(appText('edit2', { title: entry.title }), 'table-action', 'M12 20h9 M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z', () => openMaintenance(entry)),
+      action(appText('delete2', { title: entry.title }), 'table-action danger', 'M4 7h16 M10 3h4 M6 7l1 13h10l1-13 M10 11v5 M14 11v5', () => deleteMaintenance(entry))
     );
     actions.append(wrapper);
+    for (const [cell, label] of [[date, 'date'], [work, 'workObservations'], [km, 'odometer'], [cost, 'cost']]) {
+      cell.dataset.label = appText(label);
+    }
+    for (const cell of [date, work, km, cost, actions]) cell.setAttribute('role', 'cell');
     row.append(date, work, km, cost, actions);
     body.append(row);
   }
@@ -484,7 +526,7 @@ function renderChart() {
   const container = $('#chart');
   container.replaceChildren();
   if (!state.entries.length) {
-    container.append(element('div', 'chart-empty', 'Voeg onderhoud toe om het kilometerverloop te zien.'));
+    container.append(element('div', 'chart-empty', appText('addMaintenanceSee')));
     return;
   }
   const points = [...state.entries].reverse();
@@ -492,7 +534,9 @@ function renderChart() {
   const svg = document.createElementNS(ns, 'svg');
   svg.setAttribute('viewBox', '0 0 900 240');
   svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', `Kilometerverloop met ${points.length} registratie(s), van ${formatDate(points[0].performed_on)} tot ${formatDate(points.at(-1).performed_on)}.`);
+  svg.setAttribute('aria-label', appText('mileageChart', {
+    count: points.length, firstDate: formatDate(points[0].performed_on), lastDate: formatDate(points.at(-1).performed_on)
+  }));
   const add = (tag, attrs, content) => {
     const node = document.createElementNS(ns, tag);
     for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
@@ -524,7 +568,9 @@ function renderChart() {
   points.forEach((point, i) => {
     const circle = add('circle', { cx: x(times[i]), cy: y(values[i]), r: 4, fill: '#fff', stroke: '#6f9c6d', 'stroke-width': 2 });
     const title = document.createElementNS(ns, 'title');
-    title.textContent = `${formatDate(point.performed_on)}: ${formatNumber(point.odometer)} km — ${point.title}`;
+    title.textContent = appText('km', {
+      date: formatDate(point.performed_on), odometer: formatNumber(point.odometer), title: point.title
+    });
     circle.append(title);
   });
   add('text', { x: minTime === maxTime ? 470 : 75, y: 225, 'text-anchor': minTime === maxTime ? 'middle' : 'start', fill: '#9daaa1', 'font-size': 11 }, formatDate(points[0].performed_on));
@@ -541,7 +587,7 @@ function fillForm(form, data) {
 }
 function openVehicle(vehicle = null) {
   state.editingVehicle = vehicle?.id ?? null;
-  $('#vehicle-dialog-title').textContent = vehicle ? 'Voertuig bewerken' : 'Voertuig toevoegen';
+  $('#vehicle-dialog-title').textContent = appText(vehicle ? 'editVehicle' : 'addVehicle');
   const select = $('#vehicle-form [name=type]');
   select.querySelector('option[data-custom]')?.remove();
   if (vehicle && !Array.from(select.options).some(option => option.value === vehicle.type)) {
@@ -555,19 +601,19 @@ function openVehicle(vehicle = null) {
 }
 function openMaintenance(entry = null) {
   state.editingEntry = entry?.id ?? null;
-  $('#maintenance-dialog-title').textContent = entry ? 'Onderhoud of waarneming bewerken' : 'Onderhoud of waarneming toevoegen';
+  $('#maintenance-dialog-title').textContent = appText(entry ? 'editMaintenance' : 'addMaintenance');
   fillForm($('#maintenance-form'), entry || { performed_on: today() });
   $('#maintenance-dialog').showModal();
 }
 function openNote(note = null) {
   state.editingNote = note?.id ?? null;
-  $('#note-dialog-title').textContent = note ? 'Notitie bewerken' : 'Notitie toevoegen';
+  $('#note-dialog-title').textContent = appText(note ? 'editNote' : 'addNote');
   fillForm($('#note-form'), note || {});
   $('#note-dialog').showModal();
 }
 function openReminder(reminder = null) {
   state.editingReminder = reminder?.id ?? null;
-  $('#reminder-dialog-title').textContent = reminder ? 'Werkzaamheid bewerken' : 'Werkzaamheid plannen';
+  $('#reminder-dialog-title').textContent = appText(reminder ? 'editMaintenance2' : 'scheduleMaintenance');
   fillForm($('#reminder-form'), reminder || {});
   $('#reminder-dialog').showModal();
 }
@@ -648,7 +694,7 @@ $('#reminder-form').addEventListener('submit', event => {
 });
 $('#archive-vehicle').addEventListener('click', async () => {
   const vehicle = state.vehicles.find(v => v.id === state.selectedId);
-  if (!vehicle.archived && !confirm(`"${vehicle.name}" archiveren? De historiek, notities en planning blijven bewaard.`)) return;
+  if (!vehicle.archived && !confirm(appText('archiveHistory', { name: vehicle.name }))) return;
   try {
     clearError();
     store.setVehicleArchived(vehicle.id, !vehicle.archived);
@@ -657,17 +703,17 @@ $('#archive-vehicle').addEventListener('click', async () => {
 });
 $('#delete-vehicle').addEventListener('click', async () => {
   const vehicle = state.vehicles.find(v => v.id === state.selectedId);
-  if (!confirm(`"${vehicle.name}" en alle bijbehorende onderhoudsregistraties, notities en geplande werkzaamheden verwijderen?`)) return;
+  if (!confirm(appText('deleteAssociated', { name: vehicle.name }))) return;
   try { clearError(); store.deleteVehicle(vehicle.id); await refreshVehicles(); } catch (error) { showError(error.message); }
 });
 async function deleteMaintenance(entry) {
   const vehicleId = state.selectedId;
-  if (!confirm(`"${entry.title}" verwijderen?`)) return;
+  if (!confirm(appText('delete3', { title: entry.title }))) return;
   try { clearError(); store.deleteMaintenance(vehicleId, entry.id); await refreshVehicles(vehicleId); } catch (error) { showError(error.message); }
 }
 async function deleteNote(note) {
   const vehicleId = state.selectedId;
-  if (!confirm(`Notitie "${note.title}" verwijderen?`)) return;
+  if (!confirm(appText('deleteNote', { title: note.title }))) return;
   try { clearError(); store.deleteNote(vehicleId, note.id); await refreshVehicles(vehicleId); } catch (error) { showError(error.message); }
 }
 async function setNoteImportant(note) {
@@ -676,7 +722,9 @@ async function setNoteImportant(note) {
 }
 async function deleteReminder(reminder, completed) {
   const vehicleId = state.selectedId;
-  const question = completed ? `"${reminder.title}" als afgehandeld verwijderen uit de planning? Dit maakt geen onderhoudsregistratie aan.` : `"${reminder.title}" uit de planning verwijderen?`;
+  const question = appText(completed
+    ? 'removeSchedule'
+    : 'removeSchedule2', { title: reminder.title });
   if (!confirm(question)) return;
   try { clearError(); store.deleteReminder(vehicleId, reminder.id); await refreshVehicles(vehicleId); } catch (error) { showError(error.message); }
 }
@@ -697,12 +745,14 @@ function downloadBackup() {
 }
 function importSummary(data) {
   const records = data.maintenance.length + data.notes.length + data.reminders.length;
-  return `${formatNumber(data.vehicles.length)} voertuigen, ${formatNumber(records)} records`;
+  return appText('vehiclesRecords', {
+    count: formatNumber(data.vehicles.length), records: formatNumber(records)
+  });
 }
 function chooseImport(current, imported) {
   const dialog = $('#import-dialog');
-  $('#import-current').textContent = `Huidige sessie: ${importSummary(current)}`;
-  $('#import-incoming').textContent = `Te openen bestand: ${importSummary(imported)}`;
+  $('#import-current').textContent = appText('session', { summary: importSummary(current) });
+  $('#import-incoming').textContent = appText('fileOpen', { summary: importSummary(imported) });
   dialog.returnValue = '';
   return new Promise(resolve => {
     dialog.addEventListener('close', () => resolve(dialog.returnValue), { once: true });
@@ -710,7 +760,7 @@ function chooseImport(current, imported) {
   });
 }
 $('#export-data').addEventListener('click', () => {
-  try { clearError(); downloadBackup(); } catch (error) { showError(`Download mislukt: ${error.message}`); }
+  try { clearError(); downloadBackup(); } catch (error) { showError(appText('downloadFailed', { error: error.message })); }
 });
 $('#import-data').addEventListener('click', () => $('#import-file').click());
 $('#import-file').addEventListener('change', async event => {
@@ -719,21 +769,23 @@ $('#import-file').addEventListener('change', async event => {
   if (!file) return;
   try {
     clearError();
-    if (file.size > 10 * 1024 * 1024) throw new Error('Het bestand is groter dan 10 MB.');
+    if (file.size > 10 * 1024 * 1024) throw new Error(appText('fileLarger'));
     const contents = await file.text();
     const imported = garageStorage.validateData(JSON.parse(contents));
     const current = store.read();
     const snapshot = JSON.stringify(current);
     const choice = await chooseImport(current, imported);
     if (choice !== 'replace' && choice !== 'merge') return;
-    if (JSON.stringify(store.read()) !== snapshot) throw new Error('De huidige gegevens zijn gewijzigd. Open het bestand opnieuw om de aantallen te vergelijken.');
-    try { downloadBackup(); } catch (error) { throw new Error(`Back-up maken mislukt: ${error.message}`); }
+    if (JSON.stringify(store.read()) !== snapshot) throw new Error(appText('dataChanged'));
+    try { downloadBackup(); } catch (error) { throw new Error(appText('creatingBackup', { error: error.message })); }
     if (choice === 'replace') store.importJson(contents);
     else store.mergeJson(contents);
     setDataWarningDismissed(false);
     await refreshVehicles(choice === 'replace' ? null : state.selectedId);
   } catch (error) {
-    showError(`Upload mislukt: ${error instanceof SyntaxError ? 'Het bestand bevat geen geldige JSON.' : error.message}`);
+    showError(appText('uploadFailed', {
+      error: error instanceof SyntaxError ? appText('fileContain') : error.message
+    }));
   } finally { input.value = ''; }
 });
 window.addEventListener('storage', event => {
@@ -741,17 +793,19 @@ window.addEventListener('storage', event => {
   const openDialog = document.querySelector('dialog[open]');
   if (openDialog) openDialog.close();
   refreshVehicles().then(() => {
-    showError(openDialog ? 'Gegevens zijn gewijzigd in een ander tabblad. Je formulier is gesloten; voer de wijzigingen opnieuw in.' : 'Gegevens zijn bijgewerkt vanuit een ander tabblad.');
+    showError(appText(openDialog
+      ? 'dataChangedAnother'
+      : 'dataUpdated'));
   }).catch(error => showError(error.message));
 });
 try {
   state.selectedId = store.getSelectedVehicleId();
 } catch (error) {
-  showError(`Voertuigselectie kon niet worden gelezen: ${error.message}`);
+  showError(appText('readVehicle', { error: error.message }));
 }
 try {
   state.showingOverview = store.getLastView() === 'overview';
 } catch (error) {
-  showError(`Weergave kon niet worden gelezen: ${error.message}`);
+  showError(appText('readView', { error: error.message }));
 }
 refreshVehicles().catch(error => showError(error.message));

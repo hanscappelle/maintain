@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const { runInNewContext } = require('node:vm');
 const storage = require('../public/storage');
+const garageI18n = require('../public/i18n').create('nl');
 const { downloadFilename } = require('../public/download');
 
 function setup() {
@@ -50,6 +51,7 @@ function setup() {
     document,
     window: { localStorage, addEventListener() {} },
     garageStorage: { ...storage, createStore: () => ({ ...store, listVehicles: () => [] }) },
+    garageI18n,
     downloadFilename: () => downloadFilename(new Date(2026, 10, 21)),
     Blob,
     URL: { createObjectURL(value) { blob = value; return 'blob:backup'; }, revokeObjectURL() {} },
