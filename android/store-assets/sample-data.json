@@ -1,25 +1,25 @@
 {
   "version": 6,
   "vehicles": [
-    { "id": 1, "name": "Honda CB500", "type": "Motorfiets", "make": "Honda", "model": "CB500", "license_plate": "", "archived": false, "energy_type": "fuel", "consumption_per_100": "3.8", "energy_price": "1.75" },
-    { "id": 2, "name": "Volkswagen Golf", "type": "Auto", "make": "Volkswagen", "model": "Golf", "license_plate": "", "archived": false, "energy_type": "fuel", "consumption_per_100": "6.2", "energy_price": "1.75" }
+    { "id": 1, "name": "Honda CB500", "type": "Motorcycle", "make": "Honda", "model": "CB500", "license_plate": "", "archived": false, "energy_type": "fuel", "consumption_per_100": "3.8", "energy_price": "1.75" },
+    { "id": 2, "name": "Volkswagen Golf", "type": "Car", "make": "Volkswagen", "model": "Golf", "license_plate": "", "archived": false, "energy_type": "fuel", "consumption_per_100": "6.2", "energy_price": "1.75" }
   ],
   "maintenance": [
-    { "id": 1, "vehicle_id": 1, "performed_on": "2023-04-15", "odometer": 12500, "title": "Groot onderhoud", "description": "Olie en filters vervangen.", "cost": "185.00" },
-    { "id": 2, "vehicle_id": 1, "performed_on": "2024-05-04", "odometer": 18000, "title": "Banden vervangen", "description": "Nieuwe voor- en achterband.", "cost": "310.00" },
-    { "id": 3, "vehicle_id": 1, "performed_on": "2025-06-14", "odometer": 23750, "title": "Olie en filter", "description": "Motorolie en oliefilter vervangen.", "cost": "96.50" },
-    { "id": 4, "vehicle_id": 1, "performed_on": "2026-06-20", "odometer": 29400, "title": "Jaarlijks onderhoud", "description": "Olie, filter en remmen gecontroleerd.", "cost": "165.00" },
-    { "id": 5, "vehicle_id": 2, "performed_on": "2023-03-10", "odometer": 48000, "title": "Kleine onderhoudsbeurt", "description": "Olie en oliefilter vervangen.", "cost": "175.00" },
-    { "id": 6, "vehicle_id": 2, "performed_on": "2024-05-18", "odometer": 61500, "title": "Remblokken vervangen", "description": "Remblokken vooraan vernieuwd.", "cost": "225.00" },
-    { "id": 7, "vehicle_id": 2, "performed_on": "2025-07-12", "odometer": 74200, "title": "Groot onderhoud", "description": "Filters en bougies vervangen.", "cost": "420.00" },
-    { "id": 8, "vehicle_id": 2, "performed_on": "2026-07-04", "odometer": 86500, "title": "Jaarlijks onderhoud", "description": "Olie en filters vervangen.", "cost": "240.00" }
+    { "id": 1, "vehicle_id": 1, "performed_on": "2023-04-15", "odometer": 12500, "title": "Major service", "description": "Changed oil and filters.", "cost": "185.00" },
+    { "id": 2, "vehicle_id": 1, "performed_on": "2024-05-04", "odometer": 18000, "title": "Tyre replacement", "description": "Replaced front and rear tyres.", "cost": "310.00" },
+    { "id": 3, "vehicle_id": 1, "performed_on": "2025-06-14", "odometer": 23750, "title": "Oil and filter", "description": "Changed engine oil and oil filter.", "cost": "96.50" },
+    { "id": 4, "vehicle_id": 1, "performed_on": "2026-06-20", "odometer": 29400, "title": "Annual service", "description": "Checked oil, filter and brakes.", "cost": "165.00" },
+    { "id": 5, "vehicle_id": 2, "performed_on": "2023-03-10", "odometer": 48000, "title": "Routine service", "description": "Changed oil and oil filter.", "cost": "175.00" },
+    { "id": 6, "vehicle_id": 2, "performed_on": "2024-05-18", "odometer": 61500, "title": "Brake pads", "description": "Replaced front brake pads.", "cost": "225.00" },
+    { "id": 7, "vehicle_id": 2, "performed_on": "2025-07-12", "odometer": 74200, "title": "Major service", "description": "Replaced filters and spark plugs.", "cost": "420.00" },
+    { "id": 8, "vehicle_id": 2, "performed_on": "2026-07-04", "odometer": 86500, "title": "Annual service", "description": "Changed oil and filters.", "cost": "240.00" }
   ],
   "notes": [
-    { "id": 1, "vehicle_id": 1, "title": "Ketting", "content": "Regelmatig reinigen en smeren.", "important": true },
-    { "id": 2, "vehicle_id": 2, "title": "Bandenspanning", "content": "Controleer voor een lange rit.", "important": true }
+    { "id": 1, "vehicle_id": 1, "title": "Chain care", "content": "Clean and lubricate regularly.", "important": true },
+    { "id": 2, "vehicle_id": 2, "title": "Tyre pressure", "content": "Check before a long trip.", "important": true }
   ],
   "reminders": [
-    { "id": 1, "vehicle_id": 1, "title": "Ketting controleren", "due_date": null, "due_odometer": 30000 },
-    { "id": 2, "vehicle_id": 2, "title": "Volgend onderhoud", "due_date": null, "due_odometer": 100000 }
+    { "id": 1, "vehicle_id": 1, "title": "Check chain", "due_date": null, "due_odometer": 30000 },
+    { "id": 2, "vehicle_id": 2, "title": "Next service", "due_date": null, "due_odometer": 100000 }
   ]
 }

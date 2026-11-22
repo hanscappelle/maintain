@@ -1,0 +1,18 @@
+App name
+Garageboek
+
+Short description
+Track vehicle maintenance, mileage, costs and notes in one place.
+
+Full description
+Keep a clear record of the vehicles you look after. Garageboek brings maintenance history, mileage, costs and notes together in your digital garage.
+
+• Add cars, motorcycles and other vehicles.
+• Record work, dates, odometer readings, notes and optional costs.
+• See mileage history and costs at a glance.
+• Keep important vehicle notes close at hand.
+• Plan maintenance by date, mileage or both, and check upcoming work in the app.
+• Archive vehicles without losing their history.
+• Export a JSON backup and import it again when needed.
+
+Your data is stored locally in the app, not in an online account. It is not backed up automatically: make regular backups to keep a copy. Planned maintenance is shown in the app; it does not send automatic notifications.
